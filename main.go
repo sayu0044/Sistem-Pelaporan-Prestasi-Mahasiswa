@@ -1,17 +1,29 @@
 package main
 
 import (
-    "github.com/gofiber/fiber/v2"
+	"log"
+
+	"github.com/sayu0044/Sistem-Pelaporan-Prestasi-Mahasiswa/config"
+	"github.com/sayu0044/Sistem-Pelaporan-Prestasi-Mahasiswa/database"
 )
 
 func main() {
-    app := fiber.New()
+	// Load environment variables
+	config.LoadEnv()
 
-    app.Get("/", func(c *fiber.Ctx) error {
-        return c.JSON(fiber.Map{
-            "message": "API berjalan!",
-        })
-    })
+	// Setup logger
+	config.SetupLogger()
 
-    app.Listen(":3000")
+	// Connect to database
+	database.Connect()
+
+	// Setup Fiber app
+	app := config.SetupApp()
+
+	// Start server
+	port := config.Port
+	log.Printf("Server berjalan di port %s", port)
+	if err := app.Listen(":" + port); err != nil {
+		log.Fatal("Gagal menjalankan server:", err)
+	}
 }
