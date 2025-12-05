@@ -41,7 +41,7 @@ func LoadEnv() {
 
 	// JWT configuration
 	JWTSecret = getEnv("JWT_SECRET", "your-secret-key-change-in-production")
-	JWTExpiry = getEnv("JWT_EXPIRY", "24h")
+	JWTExpiry = getEnv("JWT_EXPIRY", "24h") // Default: 24 jam
 }
 
 func getEnv(key, defaultValue string) string {

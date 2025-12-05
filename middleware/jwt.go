@@ -12,24 +12,36 @@ func JWTMiddleware(jwtSecret string, jwtExpiry time.Duration) fiber.Handler {
 	authService := service.NewAuthService(jwtSecret, jwtExpiry)
 
 	return func(c *fiber.Ctx) error {
-		token := c.Get("Authorization")
-		if token == "" {
+		// Cek Authorization header
+		authHeader := c.Get("Authorization")
+		if authHeader == "" {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error":   true,
-				"message": "Token tidak ditemukan",
+				"message": "Token tidak ditemukan. Pastikan header 'Authorization: Bearer <token>' dikirim",
 			})
 		}
 
 		// Remove "Bearer " prefix if exists
+		token := authHeader
 		if len(token) > 7 && token[:7] == "Bearer " {
 			token = token[7:]
+		} else if len(token) > 0 {
+			// Jika tidak ada prefix "Bearer ", coba langsung gunakan token
+			// Tapi lebih baik tetap cek apakah ada prefix
+		}
+
+		if token == "" {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error":   true,
+				"message": "Token kosong. Format: 'Authorization: Bearer <token>'",
+			})
 		}
 
 		claims, err := authService.ValidateToken(token)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"error":   true,
-				"message": "Token tidak valid",
+				"message": "Token tidak valid: " + err.Error(),
 			})
 		}
 
@@ -42,4 +54,3 @@ func JWTMiddleware(jwtSecret string, jwtExpiry time.Duration) fiber.Handler {
 		return c.Next()
 	}
 }
-

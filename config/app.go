@@ -8,7 +8,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
-	"github.com/sayu0044/Sistem-Pelaporan-Prestasi-Mahasiswa/middleware"
 	"github.com/sayu0044/Sistem-Pelaporan-Prestasi-Mahasiswa/route"
 )
 
@@ -17,8 +16,7 @@ func SetupApp() *fiber.App {
 	// Parse JWT expiry
 	jwtExpiry, _ := time.ParseDuration(JWTExpiry)
 	app := fiber.New(fiber.Config{
-		ErrorHandler: middleware.ErrorHandler,
-		AppName:       "Sistem Pelaporan Prestasi Mahasiswa",
+		AppName: "Sistem Pelaporan Prestasi Mahasiswa",
 	})
 
 	// Middleware
@@ -38,4 +36,3 @@ func SetupApp() *fiber.App {
 
 	return app
 }
-

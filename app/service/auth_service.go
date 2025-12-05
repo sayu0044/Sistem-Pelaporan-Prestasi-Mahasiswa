@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/sayu0044/Sistem-Pelaporan-Prestasi-Mahasiswa/app/model"
@@ -15,6 +16,10 @@ type AuthService interface {
 	Login(username, password string) (string, *model.User, error)
 	Register(userData *model.User, password string) (*model.User, error)
 	ValidateToken(tokenString string) (*Claims, error)
+	HandleLogin(c *fiber.Ctx) error
+	HandleGetMe(c *fiber.Ctx) error
+	HandleHealthCheck(c *fiber.Ctx) error
+	HandleTest(c *fiber.Ctx) error
 }
 
 type authService struct {
@@ -124,4 +129,64 @@ func (s *authService) ValidateToken(tokenString string) (*Claims, error) {
 	}
 
 	return nil, errors.New("token tidak valid")
+}
+
+func (s *authService) HandleLogin(c *fiber.Ctx) error {
+	var req struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   true,
+			"message": "Invalid request body",
+		})
+	}
+
+	token, user, err := s.Login(req.Username, req.Password)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error":   true,
+			"message": err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"error":   false,
+		"message": "Login berhasil",
+		"token":   token,
+		"user": fiber.Map{
+			"id":        user.ID,
+			"username":  user.Username,
+			"email":     user.Email,
+			"full_name": user.FullName,
+			"role_id":   user.RoleID,
+		},
+	})
+}
+
+func (s *authService) HandleGetMe(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"error": false,
+		"user": fiber.Map{
+			"user_id":  c.Locals("user_id"),
+			"username": c.Locals("username"),
+			"email":    c.Locals("email"),
+			"role_id":  c.Locals("role_id"),
+		},
+	})
+}
+
+func (s *authService) HandleHealthCheck(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"message": "API Sistem Pelaporan Prestasi Mahasiswa",
+		"status":  "running",
+	})
+}
+
+func (s *authService) HandleTest(c *fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"message": "Protected route berhasil diakses",
+	})
 }

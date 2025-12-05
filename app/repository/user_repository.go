@@ -12,6 +12,7 @@ type UserRepository interface {
 	FindByID(id uuid.UUID) (*model.User, error)
 	FindByUsername(username string) (*model.User, error)
 	FindByEmail(email string) (*model.User, error)
+	FindAll() ([]model.User, error)
 	Update(user *model.User) error
 	Delete(id uuid.UUID) error
 }
@@ -55,6 +56,12 @@ func (r *userRepository) FindByEmail(email string) (*model.User, error) {
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (r *userRepository) FindAll() ([]model.User, error) {
+	var users []model.User
+	err := r.db.Preload("Role").Preload("Role.Permissions").Find(&users).Error
+	return users, err
 }
 
 func (r *userRepository) Update(user *model.User) error {
