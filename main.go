@@ -14,8 +14,11 @@ func main() {
 	// Setup logger
 	config.SetupLogger()
 
-	// Connect to database
+	// Connect to PostgreSQL database
 	database.Connect()
+
+	// Connect to MongoDB
+	database.ConnectMongoDB(config.MongoURI, config.MongoDBName)
 
 	// Setup Fiber app
 	app := config.SetupApp()

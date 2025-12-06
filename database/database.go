@@ -108,6 +108,7 @@ func AutoMigrate() {
 		&model.Student{},
 		&model.Lecturer{},
 		&model.AchievementReference{},
+		&model.AchievementHistory{},
 	)
 
 	// Jika terjadi error karena perubahan tipe kolom student_id, perbaiki
@@ -127,6 +128,7 @@ func AutoMigrate() {
 					&model.User{},
 					&model.Lecturer{},
 					&model.AchievementReference{},
+					&model.AchievementHistory{},
 				)
 				if err != nil {
 					log.Fatal("Gagal melakukan migrasi database:", err)

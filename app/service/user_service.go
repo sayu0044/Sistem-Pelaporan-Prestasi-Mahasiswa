@@ -217,7 +217,85 @@ func (s *userService) UpdateUser(userID uuid.UUID, username, email, fullName str
 	return updatedUser, role, nil
 }
 
+// checkAdminPermission memeriksa apakah user yang sedang login adalah admin
+// Jika admin, langsung allow. Jika tidak, cek permission spesifik
+func (s *userService) checkAdminPermission(c *fiber.Ctx, action, resource string) error {
+	// Get role_id from context (set by JWT middleware)
+	roleIDInterface := c.Locals("role_id")
+	if roleIDInterface == nil {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error":   true,
+			"message": "Anda tidak memiliki izin untuk mengakses resource ini",
+			"required_permission": fiber.Map{
+				"action":   action,
+				"resource": resource,
+			},
+		})
+	}
+
+	roleID, ok := roleIDInterface.(*uuid.UUID)
+	if !ok || roleID == nil {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error":   true,
+			"message": "Anda tidak memiliki izin untuk mengakses resource ini",
+			"required_permission": fiber.Map{
+				"action":   action,
+				"resource": resource,
+			},
+		})
+	}
+
+	// Load role dengan permissions
+	role, err := s.roleRepo.FindByID(*roleID)
+	if err != nil {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error":   true,
+			"message": "Anda tidak memiliki izin untuk mengakses resource ini",
+			"required_permission": fiber.Map{
+				"action":   action,
+				"resource": resource,
+			},
+		})
+	}
+
+	// Check if user is admin (case-insensitive)
+	roleNameLower := strings.ToLower(role.Name)
+	if strings.Contains(roleNameLower, "admin") {
+		// Admin memiliki akses penuh, langsung allow
+		return nil
+	}
+
+	// Jika bukan admin, cek permission spesifik
+	hasPermission := false
+	actionLower := strings.ToLower(action)
+	resourceLower := strings.ToLower(resource)
+	for _, perm := range role.Permissions {
+		if strings.ToLower(perm.Action) == actionLower && strings.ToLower(perm.Resource) == resourceLower {
+			hasPermission = true
+			break
+		}
+	}
+
+	if !hasPermission {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error":   true,
+			"message": "Anda tidak memiliki izin untuk mengakses resource ini",
+			"required_permission": fiber.Map{
+				"action":   action,
+				"resource": resource,
+			},
+		})
+	}
+
+	return nil
+}
+
 func (s *userService) HandleCreateUser(c *fiber.Ctx) error {
+	// Check permission untuk create users (admin otomatis di-allow)
+	if err := s.checkAdminPermission(c, "create", "users"); err != nil {
+		return err
+	}
+
 	var req struct {
 		Username string `json:"username"`
 		Email    string `json:"email"`
@@ -331,6 +409,11 @@ func (s *userService) HandleCreateUser(c *fiber.Ctx) error {
 }
 
 func (s *userService) HandleUpdateUser(c *fiber.Ctx) error {
+	// Check permission untuk update users (admin otomatis di-allow)
+	if err := s.checkAdminPermission(c, "update", "users"); err != nil {
+		return err
+	}
+
 	// Get user ID from URL parameter
 	userIDStr := c.Params("id")
 	userID, err := uuid.Parse(userIDStr)

@@ -18,6 +18,8 @@ var (
 	JWTSecret   string
 	JWTExpiry   string
 	Environment string
+	MongoURI    string
+	MongoDBName string
 )
 
 // LoadEnv memuat environment variables dari .env file
@@ -42,6 +44,10 @@ func LoadEnv() {
 	// JWT configuration
 	JWTSecret = getEnv("JWT_SECRET", "your-secret-key-change-in-production")
 	JWTExpiry = getEnv("JWT_EXPIRY", "24h") // Default: 24 jam
+
+	// MongoDB configuration
+	MongoURI = getEnv("MONGO_URI", "mongodb://localhost:27017")
+	MongoDBName = getEnv("MONGO_DB_NAME", "achievement_db")
 }
 
 func getEnv(key, defaultValue string) string {
