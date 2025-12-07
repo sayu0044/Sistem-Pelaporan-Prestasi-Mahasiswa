@@ -1340,3 +1340,97 @@
 23:12:23 | 200 |     59.3801ms | 127.0.0.1 | GET | /api/v1/achievements/69343a9071f46a1b2c75537c/history | -
 23:14:03 | 200 |     76.1576ms | 127.0.0.1 | POST | /api/auth/login | -
 23:14:50 | 200 |      9.4764ms | 127.0.0.1 | GET | /api/v1/achievements/6934502f71f46a1b2c75537f/history | -
+13:08:57 | 200 |    158.1383ms | 127.0.0.1 | POST | /api/auth/login | -
+13:10:51 | 201 |    151.8527ms | 127.0.0.1 | POST | /api/admin/users | -
+13:18:19 | 201 |    338.0983ms | 127.0.0.1 | POST | /api/admin/users | -
+13:22:14 | 401 |       637.7µs | 127.0.0.1 | PUT | /api/admin/users/fff3859f-9fdd-4613-a9aa-f6f46591afef | -
+13:22:44 | 200 |     37.9478ms | 127.0.0.1 | PUT | /api/admin/users/fff3859f-9fdd-4613-a9aa-f6f46591afef | -
+13:23:20 | 200 |     19.3881ms | 127.0.0.1 | PUT | /api/admin/users/fff3859f-9fdd-4613-a9aa-f6f46591afef | -
+13:26:42 | 200 |    143.8728ms | 127.0.0.1 | POST | /api/auth/login | -
+13:27:56 | 400 |      8.5651ms | 127.0.0.1 | POST | /api/admin/users | -
+13:31:22 | 201 |    341.1909ms | 127.0.0.1 | POST | /api/admin/users | -
+13:32:12 | 200 |    229.1995ms | 127.0.0.1 | POST | /api/auth/login | -
+13:34:05 | 403 |      4.4507ms | 127.0.0.1 | PUT | /api/admin/users/6c3c5f20-6425-43d0-ba3f-250ad5fcc890 | -
+13:35:09 | 404 |      1.0876ms | 127.0.0.1 | GET | /api/v1/users/ | Cannot GET /api/v1/users/
+13:36:22 | 405 |            0s | 127.0.0.1 | GET | /api/admin/users/ | Method Not Allowed
+13:39:16 | 405 |       510.2µs | 127.0.0.1 | GET | /api/admin/users/ | Method Not Allowed
+14:18:28 | 200 |     184.462ms | 127.0.0.1 | POST | /api/auth/login | -
+14:18:46 | 404 |      6.0915ms | 127.0.0.1 | GET | /api/v1/users/ | Cannot GET /api/v1/users/
+14:21:54 | 405 |       760.7µs | 127.0.0.1 | GET | /api/admin/users/6c3c5f20-6425-43d0-ba3f-250ad5fcc890 | Method Not Allowed
+14:25:50 | 200 |    129.3222ms | 127.0.0.1 | POST | /api/auth/login | -
+14:27:02 | 400 |    180.4115ms | 127.0.0.1 | POST | /api/admin/users | -
+14:29:57 | 201 |    150.2509ms | 127.0.0.1 | POST | /api/admin/users | -
+14:32:12 | 200 |     27.0319ms | 127.0.0.1 | PUT | /api/admin/users/9f8a6f9f-5f62-4a29-9523-2e8654a09c71 | -
+14:34:06 | 405 |            0s | 127.0.0.1 | GET | /api/admin/users/9f8a6f9f-5f62-4a29-9523-2e8654a09c71 | Method Not Allowed
+14:35:14 | 200 |     30.7102ms | 127.0.0.1 | GET | /api/v1/users/ | -
+14:35:38 | 200 |     20.1588ms | 127.0.0.1 | GET | /api/v1/users/9f8a6f9f-5f62-4a29-9523-2e8654a09c71 | -
+14:49:43 | 401 |       506.1µs | 127.0.0.1 | POST | /api/auth/login | -
+14:50:19 | 401 |            0s | 127.0.0.1 | POST | /api/v1/auth/login | -
+14:50:50 | 401 |            0s | 127.0.0.1 | POST | /api/v1/auth/login | -
+14:51:12 | 401 |            0s | 127.0.0.1 | POST | /api/auth/login | -
+14:51:19 | 401 |            0s | 127.0.0.1 | POST | /api/v1/login | -
+14:53:40 | 401 |      1.1055ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+15:01:06 | 200 |    148.4209ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+15:02:48 | 404 |       507.4µs | 127.0.0.1 | POST | /api/admin/users | Cannot POST /api/admin/users
+15:03:06 | 400 |     98.1958ms | 127.0.0.1 | POST | /api/v1/users | -
+15:10:24 | 400 |      6.1471ms | 127.0.0.1 | POST | /api/v1/users | -
+15:16:17 | 201 |    165.0531ms | 127.0.0.1 | POST | /api/v1/users | -
+15:18:05 | 200 |     80.8583ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+15:23:14 | 200 |     50.6345ms | 127.0.0.1 | PUT | /api/v1/users/57611a58-83c3-4266-8275-6c25bea8891d | -
+15:24:59 | 200 |      24.723ms | 127.0.0.1 | PUT | /api/v1/users/57611a58-83c3-4266-8275-6c25bea8891d | -
+15:29:19 | 201 |     92.2174ms | 127.0.0.1 | POST | /api/v1/users | -
+15:31:47 | 404 |      1.0859ms | 127.0.0.1 | PUT | /api/admin/users/9f8a6f9f-5f62-4a29-9523-2e8654a09c71 | Cannot PUT /api/admin/users/9f8a6f9f-5f62-4a29-9523-2e8654a09c71
+15:31:56 | 404 |      2.1204ms | 127.0.0.1 | PUT | /api/v1/users/9f8a6f9f-5f62-4a29-9523-2e8654a09c71 | -
+15:32:27 | 200 |      15.422ms | 127.0.0.1 | PUT | /api/v1/users/f965279d-fd74-4580-ba41-90c2d721ea3f | -
+15:34:04 | 200 |     12.0563ms | 127.0.0.1 | PUT | /api/v1/users/25ea4008-222d-4c09-97f6-b8c0cbff794d | -
+15:34:38 | 200 |     22.0777ms | 127.0.0.1 | GET | /api/v1/users/ | -
+15:35:10 | 200 |      4.4069ms | 127.0.0.1 | GET | /api/v1/users/80c6491a-3b23-4156-8787-a1b6651c94c3 | -
+15:37:15 | 401 |      2.1294ms | 127.0.0.1 | POST | /api/v1/login | -
+15:37:39 | 200 |     76.0161ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+16:03:39 | 200 |     89.6332ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+16:04:05 | 200 |     86.2327ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+16:16:41 | 401 |      2.6192ms | 127.0.0.1 | POST | /api/auth/login | -
+16:16:58 | 200 |    111.8617ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+16:22:31 | 200 |     76.3692ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+16:24:24 | 403 |      4.3975ms | 127.0.0.1 | POST | /api/v1/achievements | -
+16:24:59 | 200 |     115.418ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+16:25:34 | 403 |            0s | 127.0.0.1 | POST | /api/v1/achievements | -
+16:29:35 | 200 |    150.7633ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+16:46:08 | 403 |      1.2581ms | 127.0.0.1 | POST | /api/v1/achievements | -
+16:47:45 | 200 |    142.5048ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+16:48:18 | 201 |    114.1316ms | 127.0.0.1 | POST | /api/v1/achievements | -
+16:50:20 | 200 |     35.0483ms | 127.0.0.1 | POST | /api/v1/achievements/69354d627d3c162b8b15765e/attachments | -
+16:51:39 | 400 |      5.3561ms | 127.0.0.1 | POST | /api/v1/achievements/c7cda05b-f379-490f-9ec6-d74d1cd178a0/submit | -
+16:52:52 | 200 |     27.9037ms | 127.0.0.1 | POST | /api/v1/achievements/69354d627d3c162b8b15765e/submit | -
+16:54:59 | 200 |    166.1555ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+16:56:15 | 200 |     40.9266ms | 127.0.0.1 | POST | /api/v1/achievements/69354d627d3c162b8b15765e/verify | -
+16:59:26 | 201 |     11.3217ms | 127.0.0.1 | POST | /api/v1/achievements | -
+17:00:57 | 200 |     10.1617ms | 127.0.0.1 | POST | /api/v1/achievements/69354ffe7d3c162b8b15765f/attachments | -
+17:02:51 | 200 |     11.7859ms | 127.0.0.1 | PUT | /api/v1/achievements/69354ffe7d3c162b8b15765f | -
+17:04:04 | 200 |     18.5928ms | 127.0.0.1 | DELETE | /api/v1/achievements/69354ffe7d3c162b8b15765f | -
+17:04:37 | 200 |    178.4095ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+17:20:25 | 200 |    204.2705ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+17:21:49 | 405 |            0s | 127.0.0.1 | POST | /api/v1/auth/me | Method Not Allowed
+17:23:54 | 405 |       524.5µs | 127.0.0.1 | POST | /api/v1/auth/profile | Method Not Allowed
+17:25:01 | 405 |       806.5µs | 127.0.0.1 | POST | /api/v1/auth/me | Method Not Allowed
+17:25:16 | 200 |    140.1585ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+17:25:36 | 405 |            0s | 127.0.0.1 | POST | /api/v1/auth/me | Method Not Allowed
+17:27:43 | 200 |       506.4µs | 127.0.0.1 | GET | /api/v1/auth/me | -
+17:32:07 | 200 |     63.4188ms | 127.0.0.1 | POST | /api/v1/auth/refresh | -
+17:34:57 | 200 |       594.7µs | 127.0.0.1 | POST | /api/v1/auth/logout | -
+18:19:01 | 400 |     12.4154ms | 127.0.0.1 | GET | /api/v1/achievements/c7cda05b-f379-490f-9ec6-d74d1cd178a0/history | -
+18:19:25 | 400 |      1.0455ms | 127.0.0.1 | GET | /api/v1/achievements/69354ffe7d3c162b8b15765f/history | -
+18:20:38 | 400 |      1.6253ms | 127.0.0.1 | GET | /api/v1/achievements/69354ffe7d3c162b8b15765f/history | -
+18:31:31 | 200 |    258.0246ms | 127.0.0.1 | GET | /api/v1/achievements/69354d627d3c162b8b15765e/history | -
+18:48:11 | 200 |    157.0164ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+18:49:43 | 200 |    268.7651ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+22:30:26 | 200 |    193.1844ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+22:32:02 | 201 |    201.2943ms | 127.0.0.1 | POST | /api/v1/users | -
+22:37:48 | 201 |    179.6936ms | 127.0.0.1 | POST | /api/v1/users | -
+22:39:39 | 500 |     29.8268ms | 127.0.0.1 | PUT | /api/v1/users/8d500b7f-67ae-4d20-b2d8-2ad48d3b3032 | -
+22:39:59 | 200 |     21.0909ms | 127.0.0.1 | PUT | /api/v1/users/8d500b7f-67ae-4d20-b2d8-2ad48d3b3032 | -
+22:41:32 | 200 |     20.3083ms | 127.0.0.1 | PUT | /api/v1/users/75da6e9b-4fd5-438e-a222-2f89624d34d4 | -
+22:42:12 | 200 |      8.3715ms | 127.0.0.1 | GET | /api/v1/users/75da6e9b-4fd5-438e-a222-2f89624d34d4 | -
+22:43:10 | 200 |    135.2628ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+22:43:35 | 200 |    163.2028ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+22:44:36 | 201 |      39.055ms | 127.0.0.1 | POST | /api/v1/achievements | -

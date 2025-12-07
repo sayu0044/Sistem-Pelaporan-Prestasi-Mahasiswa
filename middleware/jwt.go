@@ -50,6 +50,8 @@ func JWTMiddleware(jwtSecret string, jwtExpiry time.Duration) fiber.Handler {
 		c.Locals("username", claims.Username)
 		c.Locals("email", claims.Email)
 		c.Locals("role_id", claims.RoleID)
+		c.Locals("role_name", claims.RoleName)
+		c.Locals("permissions", claims.Permissions)
 
 		return c.Next()
 	}

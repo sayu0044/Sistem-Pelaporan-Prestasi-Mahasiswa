@@ -18,11 +18,11 @@ func RegisterRoutes(app *fiber.App, jwtSecret string, jwtExpiry time.Duration) {
 	// Health check
 	app.Get("/", authService.HandleHealthCheck)
 
-	// Auth routes
-	auth := app.Group("/api/auth")
+	// Public auth routes (login tidak perlu JWT) - HARUS didefinisikan SEBELUM protected routes
+	authPublic := app.Group("/api/v1/auth")
 	{
-		auth.Post("/login", authService.HandleLogin)
-		auth.Get("/me", middleware.JWTMiddleware(jwtSecret, jwtExpiry), authService.HandleGetMe)
+		authPublic.Post("/login", authService.HandleLogin)
+		authPublic.Post("/refresh", authService.HandleRefreshToken) // Refresh token (perlu token lama)
 	}
 
 	// API routes (protected)
@@ -30,18 +30,31 @@ func RegisterRoutes(app *fiber.App, jwtSecret string, jwtExpiry time.Duration) {
 	{
 		api.Get("/test", authService.HandleTest)
 
-		// Admin routes
-		admin := api.Group("/admin")
+		// V1 API routes
+		v1 := api.Group("/v1")
 		{
-			// Admin Users Management
-			users := admin.Group("/users")
+			// Auth routes (protected)
+			auth := v1.Group("/auth")
 			{
-				users.Post("/", userService.HandleCreateUser)
-				users.Put("/:id", userService.HandleUpdateUser)
+				auth.Get("/me", authService.HandleGetMe)
+				auth.Get("/profile", authService.HandleProfile)
+				auth.Post("/logout", authService.HandleLogout)
 			}
-		}
 
-		// Achievement routes
-		RegisterAchievementRoutes(api, achievementService)
+			// Users Management Routes
+			// Requires: read/create/update/delete users permissions
+			users := v1.Group("/users")
+			{
+				users.Get("/", middleware.RBACMiddleware("read", "users"), userService.HandleGetAllUsers)
+				users.Get("/:id", middleware.RBACMiddleware("read", "users"), userService.HandleGetUserByID)
+				users.Post("/", middleware.RBACMiddleware("create", "users"), userService.HandleCreateUser)
+				users.Put("/:id", middleware.RBACMiddleware("update", "users"), userService.HandleUpdateUser)
+				users.Delete("/:id", middleware.RBACMiddleware("delete", "users"), userService.HandleDeleteUser)
+				users.Put("/:id/role", middleware.RBACMiddleware("update", "users"), userService.HandleUpdateUserRole)
+			}
+
+			// Achievement routes
+			RegisterAchievementRoutes(v1, achievementService)
+		}
 	}
 }

@@ -13,15 +13,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/sayu0044/Sistem-Pelaporan-Prestasi-Mahasiswa/app/model"
 	"github.com/sayu0044/Sistem-Pelaporan-Prestasi-Mahasiswa/app/service"
+	"github.com/sayu0044/Sistem-Pelaporan-Prestasi-Mahasiswa/middleware"
 )
 
 // RegisterAchievementRoutes mendaftarkan route untuk achievement management
 func RegisterAchievementRoutes(router fiber.Router, achievementService service.AchievementService) {
-	v1 := router.Group("/v1")
-	achievements := v1.Group("/achievements")
+	achievements := router.Group("/achievements")
 	{
 		// GET /api/v1/achievements - List (filtered by role)
-		achievements.Get("/", func(c *fiber.Ctx) error {
+		// Requires: read achievements permission
+		achievements.Get("/", middleware.RBACMiddleware("read", "achievements"), func(c *fiber.Ctx) error {
 			userID, err := getUserIDFromContext(c)
 			if err != nil {
 				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -53,7 +54,8 @@ func RegisterAchievementRoutes(router fiber.Router, achievementService service.A
 		})
 
 		// GET /api/v1/achievements/:id - Detail
-		achievements.Get("/:id", func(c *fiber.Ctx) error {
+		// Requires: read achievements permission
+		achievements.Get("/:id", middleware.RBACMiddleware("read", "achievements"), func(c *fiber.Ctx) error {
 			userID, err := getUserIDFromContext(c)
 			if err != nil {
 				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -88,7 +90,8 @@ func RegisterAchievementRoutes(router fiber.Router, achievementService service.A
 		})
 
 		// POST /api/v1/achievements - Create (Mahasiswa) dengan support file upload
-		achievements.Post("/", func(c *fiber.Ctx) error {
+		// Requires: create achievements permission
+		achievements.Post("/", middleware.RBACMiddleware("create", "achievements"), func(c *fiber.Ctx) error {
 			userID, err := getUserIDFromContext(c)
 			if err != nil {
 				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -220,7 +223,8 @@ func RegisterAchievementRoutes(router fiber.Router, achievementService service.A
 		})
 
 		// PUT /api/v1/achievements/:id - Update (Mahasiswa)
-		achievements.Put("/:id", func(c *fiber.Ctx) error {
+		// Requires: update achievements permission
+		achievements.Put("/:id", middleware.RBACMiddleware("update", "achievements"), func(c *fiber.Ctx) error {
 			userID, err := getUserIDFromContext(c)
 			if err != nil {
 				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -264,7 +268,8 @@ func RegisterAchievementRoutes(router fiber.Router, achievementService service.A
 		})
 
 		// DELETE /api/v1/achievements/:id - Delete (Mahasiswa)
-		achievements.Delete("/:id", func(c *fiber.Ctx) error {
+		// Requires: delete achievements permission
+		achievements.Delete("/:id", middleware.RBACMiddleware("delete", "achievements"), func(c *fiber.Ctx) error {
 			userID, err := getUserIDFromContext(c)
 			if err != nil {
 				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -299,7 +304,8 @@ func RegisterAchievementRoutes(router fiber.Router, achievementService service.A
 		})
 
 		// POST /api/v1/achievements/:id/submit - Submit for verification
-		achievements.Post("/:id/submit", func(c *fiber.Ctx) error {
+		// Requires: update achievements permission
+		achievements.Post("/:id/submit", middleware.RBACMiddleware("update", "achievements"), func(c *fiber.Ctx) error {
 			userID, err := getUserIDFromContext(c)
 			if err != nil {
 				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -335,7 +341,8 @@ func RegisterAchievementRoutes(router fiber.Router, achievementService service.A
 		})
 
 		// POST /api/v1/achievements/:id/verify - Verify (Dosen Wali)
-		achievements.Post("/:id/verify", func(c *fiber.Ctx) error {
+		// Requires: verify achievements permission
+		achievements.Post("/:id/verify", middleware.RBACMiddleware("verify", "achievements"), func(c *fiber.Ctx) error {
 			userID, err := getUserIDFromContext(c)
 			if err != nil {
 				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -371,7 +378,8 @@ func RegisterAchievementRoutes(router fiber.Router, achievementService service.A
 		})
 
 		// POST /api/v1/achievements/:id/reject - Reject (Dosen Wali)
-		achievements.Post("/:id/reject", func(c *fiber.Ctx) error {
+		// Requires: verify achievements permission
+		achievements.Post("/:id/reject", middleware.RBACMiddleware("verify", "achievements"), func(c *fiber.Ctx) error {
 			userID, err := getUserIDFromContext(c)
 			if err != nil {
 				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -417,7 +425,8 @@ func RegisterAchievementRoutes(router fiber.Router, achievementService service.A
 		})
 
 		// GET /api/v1/achievements/:id/history - Status history
-		achievements.Get("/:id/history", func(c *fiber.Ctx) error {
+		// Requires: read achievements permission
+		achievements.Get("/:id/history", middleware.RBACMiddleware("read", "achievements"), func(c *fiber.Ctx) error {
 			userID, err := getUserIDFromContext(c)
 			if err != nil {
 				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -452,7 +461,8 @@ func RegisterAchievementRoutes(router fiber.Router, achievementService service.A
 		})
 
 		// POST /api/v1/achievements/:id/attachments - Upload files
-		achievements.Post("/:id/attachments", func(c *fiber.Ctx) error {
+		// Requires: update achievements permission
+		achievements.Post("/:id/attachments", middleware.RBACMiddleware("update", "achievements"), func(c *fiber.Ctx) error {
 			userID, err := getUserIDFromContext(c)
 			if err != nil {
 				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
