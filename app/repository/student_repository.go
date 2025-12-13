@@ -65,7 +65,7 @@ func (r *studentRepository) FindAll() ([]model.Student, error) {
 }
 
 func (r *studentRepository) Update(student *model.Student) error {
-	return r.db.Save(student).Error
+	return r.db.Model(&model.Student{}).Where("id = ?", student.ID).Update("advisor_id", student.AdvisorID).Error
 }
 
 func (r *studentRepository) Delete(id uuid.UUID) error {

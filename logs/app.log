@@ -1434,3 +1434,68 @@
 22:43:10 | 200 |    135.2628ms | 127.0.0.1 | POST | /api/v1/auth/login | -
 22:43:35 | 200 |    163.2028ms | 127.0.0.1 | POST | /api/v1/auth/login | -
 22:44:36 | 201 |      39.055ms | 127.0.0.1 | POST | /api/v1/achievements | -
+23:55:37 | 200 |    107.8324ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+23:57:13 | 201 |    174.5969ms | 127.0.0.1 | POST | /api/v1/users | -
+23:59:51 | 200 |      5.0741ms | 127.0.0.1 | GET | /api/v1/lecturers | -
+00:01:21 | 404 |            0s | 127.0.0.1 | GET | /api/v1/lecturers/c36106e0-f67c-4fc4-8ff4-1dba055d2b6e | Cannot GET /api/v1/lecturers/c36106e0-f67c-4fc4-8ff4-1dba055d2b6e
+00:02:26 | 404 |            0s | 127.0.0.1 | GET | /api/v1/lecturers/c36106e0-f67c-4fc4-8ff4-1dba055d2b6e/c36106e0-f67c-4fc4-8ff4-1dba055d2b6e | Cannot GET /api/v1/lecturers/c36106e0-f67c-4fc4-8ff4-1dba055d2b6e/c36106e0-f67c-4fc4-8ff4-1dba055d2b6e
+00:05:12 | 404 |       506.6µs | 127.0.0.1 | GET | /api/v1/lecturers/61874a07-0e8a-4c15-b2fa-c78348076638/c36106e0-f67c-4fc4-8ff4-1dba055d2b6e | Cannot GET /api/v1/lecturers/61874a07-0e8a-4c15-b2fa-c78348076638/c36106e0-f67c-4fc4-8ff4-1dba055d2b6e
+11:48:30 | 200 |     219.333ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+10:38:44 | 200 |    145.4932ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+10:40:57 | 201 |    138.1258ms | 127.0.0.1 | POST | /api/v1/users | -
+10:45:25 | 201 |    144.4399ms | 127.0.0.1 | POST | /api/v1/users | -
+10:51:33 | 200 |     32.5722ms | 127.0.0.1 | PUT | /api/v1/users/03b800e9-5b6a-44f4-96a5-b18d89fbad95 | -
+10:52:59 | 200 |     16.8719ms | 127.0.0.1 | PUT | /api/v1/users/14f3b60d-36bb-44d2-a0a3-53cbc25d15d8 | -
+10:53:53 | 404 |            0s | 127.0.0.1 | DELETE | /api/admin/users/75da6e9b-4fd5-438e-a222-2f89624d34d4 | Cannot DELETE /api/admin/users/75da6e9b-4fd5-438e-a222-2f89624d34d4
+10:54:03 | 200 |      3.3178ms | 127.0.0.1 | DELETE | /api/v1/users/75da6e9b-4fd5-438e-a222-2f89624d34d4 | -
+11:09:14 | 401 |      9.5407ms | 127.0.0.1 | GET | /api/v1/users/14f3b60d-36bb-44d2-a0a3-53cbc25d15d8 | -
+11:11:23 | 200 |    123.4385ms | 127.0.0.1 | GET | /api/v1/users | -
+11:15:13 | 200 |     11.7405ms | 127.0.0.1 | GET | /api/v1/users/14f3b60d-36bb-44d2-a0a3-53cbc25d15d8 | -
+13:09:12 | 200 |    151.6397ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+13:23:59 | 200 |    201.1973ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+13:25:38 | 201 |    349.8922ms | 127.0.0.1 | POST | /api/v1/users | -
+13:26:59 | 201 |    156.2761ms | 127.0.0.1 | POST | /api/v1/users | -
+13:29:10 | 200 |    135.1913ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+13:36:03 | 201 |     54.2047ms | 127.0.0.1 | POST | /api/v1/achievements | -
+13:38:29 | 200 |     74.6911ms | 127.0.0.1 | POST | /api/v1/achievements/693914d41620d8322c5d3bed/attachments | -
+14:19:36 | 200 |    451.9886ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+14:20:05 | 200 |     28.2213ms | 127.0.0.1 | GET | /api/v1/students | -
+14:22:52 | 200 |      7.3084ms | 127.0.0.1 | GET | /api/v1/students/5d7e4c77-001d-4495-bf59-449247b9bb7d | -
+14:26:02 | 404 |      2.1474ms | 127.0.0.1 | GET | /api/v1/students/5d7e4c77-001d-4495-bf59-449247b9bb7d/achievement | Cannot GET /api/v1/students/5d7e4c77-001d-4495-bf59-449247b9bb7d/achievement
+14:27:06 | 404 |            0s | 127.0.0.1 | GET | /api/v1/students/5d7e4c77-001d-4495-bf59-449247b9bb7d/achievement | Cannot GET /api/v1/students/5d7e4c77-001d-4495-bf59-449247b9bb7d/achievement
+14:28:59 | 200 |      6.9913ms | 127.0.0.1 | GET | /api/v1/students/5d7e4c77-001d-4495-bf59-449247b9bb7d | -
+14:29:44 | 200 |    119.2265ms | 127.0.0.1 | GET | /api/v1/students/5d7e4c77-001d-4495-bf59-449247b9bb7d/achievements | -
+14:45:31 | 200 |     63.5002ms | 127.0.0.1 | PUT | /api/v1/students/527d11a4-601c-470c-9df4-2a9d28f07993/advisor | -
+15:07:47 | 404 |    441.3693ms | 127.0.0.1 | PUT | /api/v1/students/f4121113-15c5-4a2f-9038-f64d66b18221/advisor | -
+15:08:17 | 400 |      1.0488ms | 127.0.0.1 | PUT | /api/v1/students/M007/advisor | -
+15:08:42 | 404 |      3.3384ms | 127.0.0.1 | PUT | /api/v1/527d11a4-601c-470c-9df4-2a9d28f07993/M007/advisor | Cannot PUT /api/v1/527d11a4-601c-470c-9df4-2a9d28f07993/M007/advisor
+15:12:08 | 404 |       536.6µs | 127.0.0.1 | PUT | /api/v1/527d11a4-601c-470c-9df4-2a9d28f07993/advisor | Cannot PUT /api/v1/527d11a4-601c-470c-9df4-2a9d28f07993/advisor
+13:14:13 | 200 |    190.6397ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+13:22:55 | 201 |    235.7626ms | 127.0.0.1 | POST | /api/v1/users | -
+13:23:54 | 201 |    174.0952ms | 127.0.0.1 | POST | /api/v1/users | -
+13:24:41 | 200 |    182.2281ms | 127.0.0.1 | GET | /api/v1/achievements/69343a9071f46a1b2c75537c | -
+13:24:56 | 200 |     20.0207ms | 127.0.0.1 | GET | /api/v1/achievements/69354d627d3c162b8b15765e/history | -
+13:31:22 | 200 |     20.5291ms | 127.0.0.1 | GET | /api/v1/achievements/69354d627d3c162b8b15765e/history | -
+13:34:54 | 200 |     10.3117ms | 127.0.0.1 | GET | /api/v1/achievements/6934502f71f46a1b2c75537f/history | -
+13:41:45 | 200 |     61.0644ms | 127.0.0.1 | GET | /api/v1/students | -
+13:42:03 | 200 |    124.2133ms | 127.0.0.1 | GET | /api/v1/students/5d7e4c77-001d-4495-bf59-449247b9bb7d/achievements | -
+13:46:45 | 200 |     15.3513ms | 127.0.0.1 | GET | /api/v1/lecturers | -
+13:50:25 | 200 |      9.3047ms | 127.0.0.1 | GET | /api/v1/lecturers/c36106e0-f67c-4fc4-8ff4-1dba055d2b6e/advisees | -
+14:30:58 | 404 |     16.4178ms | 127.0.0.1 | PUT | /api/v1/5d7e4c77-001d-4495-bf59-449247b9bb7d/advisor | Cannot PUT /api/v1/5d7e4c77-001d-4495-bf59-449247b9bb7d/advisor
+14:31:48 | 200 |      71.264ms | 127.0.0.1 | PUT | /api/v1/students/5d7e4c77-001d-4495-bf59-449247b9bb7d/advisor | -
+14:33:58 | 404 |      3.1702ms | 127.0.0.1 | PUT | /api/v1/students/75da6e9b-4fd5-438e-a222-2f89624d34d4/advisor | -
+14:35:27 | 200 |      9.1204ms | 127.0.0.1 | PUT | /api/v1/students/f216495a-9a8f-4e99-989a-8a5c819bd893/advisor | -
+14:37:58 | 200 |       8.004ms | 127.0.0.1 | PUT | /api/v1/students/f216495a-9a8f-4e99-989a-8a5c819bd893/advisor | -
+14:38:59 | 200 |     95.6638ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+14:42:11 | 200 |      7.8773ms | 127.0.0.1 | PUT | /api/v1/students/da6d950b-1f80-4eb6-b880-f5b930da8656/advisor | -
+14:48:31 | 400 |            0s | 127.0.0.1 | PUT | /api/v1/students/da6d950b-1f80-4eb6-b880-f5b930da8656/advisor | -
+14:48:44 | 200 |      7.9342ms | 127.0.0.1 | PUT | /api/v1/students/da6d950b-1f80-4eb6-b880-f5b930da8656/advisor | -
+14:57:39 | 200 |    121.0527ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+14:58:43 | 200 |     18.3711ms | 127.0.0.1 | PUT | /api/v1/students/da6d950b-1f80-4eb6-b880-f5b930da8656/advisor | -
+15:01:49 | 400 |     14.1879ms | 127.0.0.1 | POST | /api/v1/users | -
+15:02:05 | 201 |     98.9682ms | 127.0.0.1 | POST | /api/v1/users | -
+15:05:46 | 201 |     78.1522ms | 127.0.0.1 | POST | /api/v1/users | -
+15:45:24 | 200 |    229.5005ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+15:51:51 | 201 |    178.1941ms | 127.0.0.1 | POST | /api/v1/users | -
+15:52:31 | 200 |    141.6886ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+15:54:24 | 201 |    130.8306ms | 127.0.0.1 | POST | /api/v1/achievements | -

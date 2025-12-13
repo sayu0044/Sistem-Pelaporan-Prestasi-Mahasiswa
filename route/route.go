@@ -14,6 +14,8 @@ func RegisterRoutes(app *fiber.App, jwtSecret string, jwtExpiry time.Duration) {
 	authService := service.NewAuthService(jwtSecret, jwtExpiry)
 	userService := service.NewUserService(authService)
 	achievementService := service.NewAchievementService()
+	studentService := service.NewStudentService()
+	lecturerService := service.NewLecturerService()
 
 	// Health check
 	app.Get("/", authService.HandleHealthCheck)
@@ -33,7 +35,7 @@ func RegisterRoutes(app *fiber.App, jwtSecret string, jwtExpiry time.Duration) {
 		// V1 API routes
 		v1 := api.Group("/v1")
 		{
-			// Auth routes (protected)
+			// Auth routes (protected) - menggunakan /api/v1/auth
 			auth := v1.Group("/auth")
 			{
 				auth.Get("/me", authService.HandleGetMe)
@@ -41,20 +43,17 @@ func RegisterRoutes(app *fiber.App, jwtSecret string, jwtExpiry time.Duration) {
 				auth.Post("/logout", authService.HandleLogout)
 			}
 
-			// Users Management Routes
-			// Requires: read/create/update/delete users permissions
-			users := v1.Group("/users")
-			{
-				users.Get("/", middleware.RBACMiddleware("read", "users"), userService.HandleGetAllUsers)
-				users.Get("/:id", middleware.RBACMiddleware("read", "users"), userService.HandleGetUserByID)
-				users.Post("/", middleware.RBACMiddleware("create", "users"), userService.HandleCreateUser)
-				users.Put("/:id", middleware.RBACMiddleware("update", "users"), userService.HandleUpdateUser)
-				users.Delete("/:id", middleware.RBACMiddleware("delete", "users"), userService.HandleDeleteUser)
-				users.Put("/:id/role", middleware.RBACMiddleware("update", "users"), userService.HandleUpdateUserRole)
-			}
+			// User routes
+			RegisterUserRoutes(v1, userService)
 
 			// Achievement routes
 			RegisterAchievementRoutes(v1, achievementService)
+
+			// Student routes
+			RegisterStudentRoutes(v1, studentService)
+
+			// Lecturer routes
+			RegisterLecturerRoutes(v1, lecturerService)
 		}
 	}
 }
