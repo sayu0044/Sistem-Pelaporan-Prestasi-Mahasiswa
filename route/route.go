@@ -27,6 +27,7 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB, mongoDB *mongo.Database, jwtSec
 	achievementService := service.NewAchievementService(achievementRepo, historyRepo, studentRepo, lecturerRepo, userRepo, roleRepo)
 	studentService := service.NewStudentService(studentRepo, lecturerRepo, achievementRepo)
 	lecturerService := service.NewLecturerService(lecturerRepo, studentRepo)
+	reportService := service.NewReportService(achievementRepo, studentRepo, lecturerRepo, userRepo, roleRepo)
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
@@ -273,6 +274,7 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB, mongoDB *mongo.Database, jwtSec
 			RegisterAchievementRoutes(v1, achievementService)
 			RegisterStudentRoutes(v1, studentService)
 			RegisterLecturerRoutes(v1, lecturerService)
+			RegisterReportRoutes(v1, reportService)
 		}
 	}
 }

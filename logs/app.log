@@ -1562,3 +1562,14 @@
 18:34:10 | 200 |      9.2591ms | 127.0.0.1 | GET | /api/v1/achievements/693d46229b254018c8e59e7c | -
 18:35:14 | 200 |      3.7295ms | 127.0.0.1 | GET | /api/v1/students | -
 18:36:06 | 200 |     17.9454ms | 127.0.0.1 | GET | /api/v1/students/c84f7330-df99-4d7d-9660-0befc348ef58/achievements | -
+19:26:33 | 200 |     73.3926ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+19:27:10 | 200 |      6.1766ms | 127.0.0.1 | GET | /api/v1/lecturers/30a1f455-fdd2-4b40-8193-38ebbc345d4d/advisees | -
+19:32:04 | 404 |         505µs | 127.0.0.1 | GET | /api/v1/report/statistic | Cannot GET /api/v1/report/statistic
+19:32:17 | 404 |            0s | 127.0.0.1 | GET | /api/v1/report/statistics | Cannot GET /api/v1/report/statistics
+19:32:24 | 200 |    130.0016ms | 127.0.0.1 | GET | /api/v1/reports/statistics | -
+19:35:20 | 200 |     20.6613ms | 127.0.0.1 | GET | /api/v1/reports/student/c84f7330-df99-4d7d-9660-0befc348ef58 | -
+19:36:39 | 200 |      78.929ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+19:36:57 | 200 |     13.9749ms | 127.0.0.1 | GET | /api/v1/reports/statistics | -
+19:40:07 | 200 |      19.318ms | 127.0.0.1 | GET | /api/v1/reports/student/c84f7330-df99-4d7d-9660-0befc348ef58 | -
+19:40:53 | 200 |     78.7588ms | 127.0.0.1 | POST | /api/v1/auth/login | -
+19:41:17 | 200 |     19.1673ms | 127.0.0.1 | GET | /api/v1/reports/statistics | -

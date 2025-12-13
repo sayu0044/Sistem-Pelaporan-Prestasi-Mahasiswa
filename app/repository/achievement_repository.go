@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -11,6 +12,24 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
 )
+
+type AchievementStatistics struct {
+	TotalByType                  map[string]int64
+	TotalByPeriod               []PeriodStat
+	TopStudents                 []TopStudentStat
+	CompetitionLevelDistribution map[string]int64
+}
+
+type PeriodStat struct {
+	Period string
+	Count  int64
+}
+
+type TopStudentStat struct {
+	StudentID         string
+	TotalPoints       float64
+	TotalAchievements int64
+}
 
 type AchievementRepository interface {
 	// MongoDB operations
@@ -28,6 +47,9 @@ type AchievementRepository interface {
 	FindReferencesByStudentIDs(ctx context.Context, studentIDs []uuid.UUID) ([]model.AchievementReference, error)
 	FindReferencesWithPagination(ctx context.Context, studentIDs []uuid.UUID, page, limit int) ([]model.AchievementReference, int64, error)
 	DeleteReference(ctx context.Context, id uuid.UUID) error
+
+	// Statistics operations
+	GetAchievementStatistics(ctx context.Context, studentIDs []string) (*AchievementStatistics, error)
 }
 
 type achievementRepository struct {
@@ -207,4 +229,149 @@ func (r *achievementRepository) FindReferencesWithPagination(ctx context.Context
 		Find(&references).Error
 
 	return references, total, err
+}
+
+func (r *achievementRepository) GetAchievementStatistics(ctx context.Context, studentIDs []string) (*AchievementStatistics, error) {
+	stats := &AchievementStatistics{
+		TotalByType:                  make(map[string]int64),
+		TotalByPeriod:               []PeriodStat{},
+		TopStudents:                 []TopStudentStat{},
+		CompetitionLevelDistribution: make(map[string]int64),
+	}
+
+	matchFilter := bson.M{
+		"deletedAt": bson.M{"$exists": false},
+	}
+
+	if len(studentIDs) > 0 {
+		matchFilter["studentId"] = bson.M{"$in": studentIDs}
+	}
+
+	totalByTypePipeline := []bson.M{
+		{"$match": matchFilter},
+		{"$group": bson.M{
+			"_id":   "$achievementType",
+			"count": bson.M{"$sum": 1},
+		}},
+	}
+
+	cursor, err := r.mongoCollection.Aggregate(ctx, totalByTypePipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var result struct {
+			ID    string `bson:"_id"`
+			Count int64  `bson:"count"`
+		}
+		if err := cursor.Decode(&result); err == nil {
+			stats.TotalByType[result.ID] = result.Count
+		}
+	}
+
+	totalByPeriodPipeline := []bson.M{
+		{"$match": matchFilter},
+		{"$group": bson.M{
+			"_id": bson.M{
+				"year":  bson.M{"$year": "$createdAt"},
+				"month": bson.M{"$month": "$createdAt"},
+			},
+			"count": bson.M{"$sum": 1},
+		}},
+		{"$sort": bson.M{"_id.year": -1, "_id.month": -1}},
+	}
+
+	cursor, err = r.mongoCollection.Aggregate(ctx, totalByPeriodPipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var result struct {
+			ID    struct {
+				Year  int `bson:"year"`
+				Month int `bson:"month"`
+			} `bson:"_id"`
+			Count int64 `bson:"count"`
+		}
+		if err := cursor.Decode(&result); err == nil {
+			period := fmt.Sprintf("%d-%02d", result.ID.Year, result.ID.Month)
+			stats.TotalByPeriod = append(stats.TotalByPeriod, PeriodStat{
+				Period: period,
+				Count:  result.Count,
+			})
+		}
+	}
+
+	topStudentsPipeline := []bson.M{
+		{"$match": matchFilter},
+		{"$group": bson.M{
+			"_id":              "$studentId",
+			"totalPoints":      bson.M{"$sum": "$points"},
+			"totalAchievements": bson.M{"$sum": 1},
+		}},
+		{"$sort": bson.M{"totalPoints": -1}},
+		{"$limit": 10},
+	}
+
+	cursor, err = r.mongoCollection.Aggregate(ctx, topStudentsPipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var result struct {
+			ID               string  `bson:"_id"`
+			TotalPoints      float64 `bson:"totalPoints"`
+			TotalAchievements int64  `bson:"totalAchievements"`
+		}
+		if err := cursor.Decode(&result); err == nil {
+			stats.TopStudents = append(stats.TopStudents, TopStudentStat{
+				StudentID:         result.ID,
+				TotalPoints:       result.TotalPoints,
+				TotalAchievements: result.TotalAchievements,
+			})
+		}
+	}
+
+	competitionMatchFilter := bson.M{
+		"achievementType": "competition",
+		"deletedAt":       bson.M{"$exists": false},
+	}
+
+	if len(studentIDs) > 0 {
+		competitionMatchFilter["studentId"] = bson.M{"$in": studentIDs}
+	}
+
+	competitionLevelPipeline := []bson.M{
+		{"$match": competitionMatchFilter},
+		{"$group": bson.M{
+			"_id":   "$details.competitionLevel",
+			"count": bson.M{"$sum": 1},
+		}},
+	}
+
+	cursor, err = r.mongoCollection.Aggregate(ctx, competitionLevelPipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var result struct {
+			ID    *string `bson:"_id"`
+			Count int64   `bson:"count"`
+		}
+		if err := cursor.Decode(&result); err == nil {
+			if result.ID != nil {
+				stats.CompetitionLevelDistribution[*result.ID] = result.Count
+			}
+		}
+	}
+
+	return stats, nil
 }
