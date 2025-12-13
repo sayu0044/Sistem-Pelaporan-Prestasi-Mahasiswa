@@ -57,3 +57,7 @@ func getEnv(key, defaultValue string) string {
 	}
 	return value
 }
+
+func GetEnv(key, defaultValue string) string {
+	return getEnv(key, defaultValue)
+}

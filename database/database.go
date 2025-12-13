@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 	"github.com/sayu0044/Sistem-Pelaporan-Prestasi-Mahasiswa/app/model"
@@ -100,7 +101,23 @@ func AutoMigrate() {
 		}
 	}
 
-	// Lakukan migrasi normal
+	// Drop semua constraint yang mungkin dibuat oleh GORM tapi tidak ada sebelum AutoMigrate
+	// GORM mungkin membuat constraint dengan berbagai nama, jadi kita drop semua kemungkinan
+	constraints := []string{
+		"uni_lecturers_user_id",
+		"uni_students_user_id",
+		"lecturers_user_id_key",
+		"students_user_id_key",
+		"lecturers_user_id_unique",
+		"students_user_id_unique",
+	}
+	
+	for _, constraint := range constraints {
+		DB.Exec(fmt.Sprintf(`ALTER TABLE lecturers DROP CONSTRAINT IF EXISTS %s`, constraint))
+		DB.Exec(fmt.Sprintf(`ALTER TABLE students DROP CONSTRAINT IF EXISTS %s`, constraint))
+	}
+
+	// Lakukan migrasi normal dengan error handling
 	err := DB.AutoMigrate(
 		&model.Role{},
 		&model.Permission{},
@@ -108,10 +125,22 @@ func AutoMigrate() {
 		&model.Student{},
 		&model.Lecturer{},
 		&model.AchievementReference{},
-		&model.AchievementHistory{},
 	)
 
-	// Jika terjadi error karena perubahan tipe kolom student_id, perbaiki
+	// Jika terjadi error karena constraint tidak ada, abaikan
+	if err != nil {
+		errStr := strings.ToLower(err.Error())
+		// Jika error karena constraint tidak ada, abaikan dan lanjutkan
+		if (strings.Contains(errStr, "does not exist") && strings.Contains(errStr, "constraint")) ||
+			strings.Contains(errStr, "uni_lecturers_user_id") ||
+			strings.Contains(errStr, "uni_students_user_id") ||
+			strings.Contains(errStr, "uni_") {
+			log.Printf("Warning: Constraint tidak ditemukan (diabaikan): %v", err)
+			err = nil
+		}
+	}
+
+	// Jika masih ada error karena perubahan tipe kolom student_id, perbaiki
 	if err != nil {
 		if needToFixAfterMigration {
 			log.Println("Memperbaiki tipe kolom student_id setelah error migrasi...")
@@ -128,8 +157,17 @@ func AutoMigrate() {
 					&model.User{},
 					&model.Lecturer{},
 					&model.AchievementReference{},
-					&model.AchievementHistory{},
 				)
+				if err != nil {
+					errStr := strings.ToLower(err.Error())
+					if (strings.Contains(errStr, "does not exist") && strings.Contains(errStr, "constraint")) ||
+						strings.Contains(errStr, "uni_lecturers_user_id") ||
+						strings.Contains(errStr, "uni_students_user_id") ||
+						strings.Contains(errStr, "uni_") {
+						log.Printf("Warning: Constraint tidak ditemukan (diabaikan): %v", err)
+						err = nil
+					}
+				}
 				if err != nil {
 					log.Fatal("Gagal melakukan migrasi database:", err)
 				}
@@ -162,6 +200,10 @@ func AutoMigrate() {
 // FixSchema memperbaiki tipe kolom yang tidak sesuai dengan model
 func FixSchema() {
 	log.Println("Memeriksa dan memperbaiki schema database...")
+
+	// Drop constraint yang mungkin dibuat oleh GORM tapi tidak ada
+	DB.Exec(`ALTER TABLE lecturers DROP CONSTRAINT IF EXISTS uni_lecturers_user_id`)
+	DB.Exec(`ALTER TABLE students DROP CONSTRAINT IF EXISTS uni_students_user_id`)
 
 	// Fix student_id column type dari UUID ke VARCHAR jika diperlukan
 	var studentColumnType string

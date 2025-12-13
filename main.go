@@ -2,28 +2,21 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/sayu0044/Sistem-Pelaporan-Prestasi-Mahasiswa/config"
 	"github.com/sayu0044/Sistem-Pelaporan-Prestasi-Mahasiswa/database"
 )
 
 func main() {
-	// Load environment variables
 	config.LoadEnv()
-
-	// Setup logger
 	config.SetupLogger()
-
-	// Connect to PostgreSQL database
 	database.Connect()
-
-	// Connect to MongoDB
 	database.ConnectMongoDB(config.MongoURI, config.MongoDBName)
 
-	// Setup Fiber app
-	app := config.SetupApp()
+	jwtExpiry, _ := time.ParseDuration(config.JWTExpiry)
+	app := config.SetupApp(database.DB, database.MongoDB, config.JWTSecret, jwtExpiry)
 
-	// Start server
 	port := config.Port
 	log.Printf("Server berjalan di port %s", port)
 	if err := app.Listen(":" + port); err != nil {

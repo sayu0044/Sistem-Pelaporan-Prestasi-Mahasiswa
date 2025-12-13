@@ -9,17 +9,15 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/sayu0044/Sistem-Pelaporan-Prestasi-Mahasiswa/route"
+	"go.mongodb.org/mongo-driver/mongo"
+	"gorm.io/gorm"
 )
 
-// SetupApp membuat fiber instance, middleware, dan register route
-func SetupApp() *fiber.App {
-	// Parse JWT expiry
-	jwtExpiry, _ := time.ParseDuration(JWTExpiry)
+func SetupApp(db *gorm.DB, mongoDB *mongo.Database, jwtSecret string, jwtExpiry time.Duration) *fiber.App {
 	app := fiber.New(fiber.Config{
 		AppName: "Sistem Pelaporan Prestasi Mahasiswa",
 	})
 
-	// Middleware
 	app.Use(recover.New())
 	app.Use(helmet.New())
 	app.Use(cors.New(cors.Config{
@@ -31,8 +29,7 @@ func SetupApp() *fiber.App {
 		Output: LoggerWriter,
 	}))
 
-	// Register routes
-	route.RegisterRoutes(app, JWTSecret, jwtExpiry)
+	route.RegisterRoutes(app, db, mongoDB, jwtSecret, jwtExpiry)
 
 	return app
 }

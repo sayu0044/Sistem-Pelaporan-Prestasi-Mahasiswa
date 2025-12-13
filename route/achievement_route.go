@@ -36,7 +36,7 @@ func RegisterAchievementRoutes(router fiber.Router, achievementService service.A
 			limit, _ := strconv.Atoi(c.Query("limit", "10"))
 			status := c.Query("status", "")
 
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
 			result, err := achievementService.GetAchievements(ctx, userID, page, limit, status)
@@ -72,7 +72,7 @@ func RegisterAchievementRoutes(router fiber.Router, achievementService service.A
 				})
 			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
 			result, err := achievementService.GetAchievementByID(ctx, userID, achievementID)
@@ -147,7 +147,7 @@ func RegisterAchievementRoutes(router fiber.Router, achievementService service.A
 				}
 			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
 			// Create achievement
@@ -249,7 +249,7 @@ func RegisterAchievementRoutes(router fiber.Router, achievementService service.A
 				})
 			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
 			result, err := achievementService.UpdateAchievement(ctx, userID, achievementID, &req)
@@ -286,7 +286,7 @@ func RegisterAchievementRoutes(router fiber.Router, achievementService service.A
 				})
 			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
 			err = achievementService.DeleteAchievement(ctx, userID, achievementID)
@@ -322,7 +322,7 @@ func RegisterAchievementRoutes(router fiber.Router, achievementService service.A
 				})
 			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
 			result, err := achievementService.SubmitAchievement(ctx, userID, achievementID)
@@ -359,7 +359,7 @@ func RegisterAchievementRoutes(router fiber.Router, achievementService service.A
 				})
 			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
 			result, err := achievementService.VerifyAchievement(ctx, userID, achievementID)
@@ -406,7 +406,7 @@ func RegisterAchievementRoutes(router fiber.Router, achievementService service.A
 				})
 			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
 			result, err := achievementService.RejectAchievement(ctx, userID, achievementID, req.RejectionNote)
@@ -443,7 +443,7 @@ func RegisterAchievementRoutes(router fiber.Router, achievementService service.A
 				})
 			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
 			result, err := achievementService.GetAchievementHistory(ctx, userID, achievementID)
@@ -534,7 +534,7 @@ func RegisterAchievementRoutes(router fiber.Router, achievementService service.A
 				})
 			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
 			// Update achievement with attachment

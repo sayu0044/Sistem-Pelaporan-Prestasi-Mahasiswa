@@ -6,7 +6,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sayu0044/Sistem-Pelaporan-Prestasi-Mahasiswa/app/model"
-	"github.com/sayu0044/Sistem-Pelaporan-Prestasi-Mahasiswa/database"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -22,13 +21,13 @@ type AchievementRepository interface {
 	SoftDeleteAchievement(ctx context.Context, id string) error
 
 	// PostgreSQL operations
-	CreateReference(reference *model.AchievementReference) error
-	UpdateReference(reference *model.AchievementReference) error
-	FindReferenceByID(id uuid.UUID) (*model.AchievementReference, error)
-	FindReferenceByMongoID(mongoID string) (*model.AchievementReference, error)
-	FindReferencesByStudentIDs(studentIDs []uuid.UUID) ([]model.AchievementReference, error)
-	FindReferencesWithPagination(studentIDs []uuid.UUID, page, limit int) ([]model.AchievementReference, int64, error)
-	DeleteReference(id uuid.UUID) error
+	CreateReference(ctx context.Context, reference *model.AchievementReference) error
+	UpdateReference(ctx context.Context, reference *model.AchievementReference) error
+	FindReferenceByID(ctx context.Context, id uuid.UUID) (*model.AchievementReference, error)
+	FindReferenceByMongoID(ctx context.Context, mongoID string) (*model.AchievementReference, error)
+	FindReferencesByStudentIDs(ctx context.Context, studentIDs []uuid.UUID) ([]model.AchievementReference, error)
+	FindReferencesWithPagination(ctx context.Context, studentIDs []uuid.UUID, page, limit int) ([]model.AchievementReference, int64, error)
+	DeleteReference(ctx context.Context, id uuid.UUID) error
 }
 
 type achievementRepository struct {
@@ -36,10 +35,10 @@ type achievementRepository struct {
 	db              *gorm.DB
 }
 
-func NewAchievementRepository() AchievementRepository {
+func NewAchievementRepository(db *gorm.DB, mongoDB *mongo.Database) AchievementRepository {
 	return &achievementRepository{
-		mongoCollection: database.MongoDB.Collection("achievements"),
-		db:              database.DB,
+		mongoCollection: mongoDB.Collection("achievements"),
+		db:              db,
 	}
 }
 
@@ -149,17 +148,17 @@ func (r *achievementRepository) SoftDeleteAchievement(ctx context.Context, id st
 
 // PostgreSQL operations
 
-func (r *achievementRepository) CreateReference(reference *model.AchievementReference) error {
-	return r.db.Create(reference).Error
+func (r *achievementRepository) CreateReference(ctx context.Context, reference *model.AchievementReference) error {
+	return r.db.WithContext(ctx).Create(reference).Error
 }
 
-func (r *achievementRepository) UpdateReference(reference *model.AchievementReference) error {
-	return r.db.Save(reference).Error
+func (r *achievementRepository) UpdateReference(ctx context.Context, reference *model.AchievementReference) error {
+	return r.db.WithContext(ctx).Save(reference).Error
 }
 
-func (r *achievementRepository) FindReferenceByID(id uuid.UUID) (*model.AchievementReference, error) {
+func (r *achievementRepository) FindReferenceByID(ctx context.Context, id uuid.UUID) (*model.AchievementReference, error) {
 	var reference model.AchievementReference
-	err := r.db.Preload("Student").Preload("Student.User").Preload("Verifier").
+	err := r.db.WithContext(ctx).Preload("Student").Preload("Student.User").Preload("Verifier").
 		Where("id = ?", id).First(&reference).Error
 	if err != nil {
 		return nil, err
@@ -167,9 +166,9 @@ func (r *achievementRepository) FindReferenceByID(id uuid.UUID) (*model.Achievem
 	return &reference, nil
 }
 
-func (r *achievementRepository) FindReferenceByMongoID(mongoID string) (*model.AchievementReference, error) {
+func (r *achievementRepository) FindReferenceByMongoID(ctx context.Context, mongoID string) (*model.AchievementReference, error) {
 	var reference model.AchievementReference
-	err := r.db.Preload("Student").Preload("Student.User").Preload("Verifier").
+	err := r.db.WithContext(ctx).Preload("Student").Preload("Student.User").Preload("Verifier").
 		Where("mongo_achievement_id = ?", mongoID).First(&reference).Error
 	if err != nil {
 		return nil, err
@@ -177,32 +176,29 @@ func (r *achievementRepository) FindReferenceByMongoID(mongoID string) (*model.A
 	return &reference, nil
 }
 
-func (r *achievementRepository) FindReferencesByStudentIDs(studentIDs []uuid.UUID) ([]model.AchievementReference, error) {
+func (r *achievementRepository) FindReferencesByStudentIDs(ctx context.Context, studentIDs []uuid.UUID) ([]model.AchievementReference, error) {
 	var references []model.AchievementReference
-	err := r.db.Preload("Student").Preload("Student.User").Preload("Verifier").
+	err := r.db.WithContext(ctx).Preload("Student").Preload("Student.User").Preload("Verifier").
 		Where("student_id IN ?", studentIDs).
 		Order("created_at DESC").
 		Find(&references).Error
 	return references, err
 }
 
-func (r *achievementRepository) DeleteReference(id uuid.UUID) error {
-	return r.db.Delete(&model.AchievementReference{}, id).Error
+func (r *achievementRepository) DeleteReference(ctx context.Context, id uuid.UUID) error {
+	return r.db.WithContext(ctx).Delete(&model.AchievementReference{}, id).Error
 }
 
-// Helper function untuk pagination
-func (r *achievementRepository) FindReferencesWithPagination(studentIDs []uuid.UUID, page, limit int) ([]model.AchievementReference, int64, error) {
+func (r *achievementRepository) FindReferencesWithPagination(ctx context.Context, studentIDs []uuid.UUID, page, limit int) ([]model.AchievementReference, int64, error) {
 	var references []model.AchievementReference
 	var total int64
 
-	query := r.db.Model(&model.AchievementReference{}).Where("student_id IN ?", studentIDs)
+	query := r.db.WithContext(ctx).Model(&model.AchievementReference{}).Where("student_id IN ?", studentIDs)
 
-	// Count total
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	// Get paginated results
 	offset := (page - 1) * limit
 	err := query.Preload("Student").Preload("Student.User").Preload("Verifier").
 		Order("created_at DESC").

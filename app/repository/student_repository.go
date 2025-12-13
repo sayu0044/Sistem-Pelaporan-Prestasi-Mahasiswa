@@ -1,73 +1,73 @@
 package repository
 
 import (
+	"context"
 	"github.com/google/uuid"
 	"github.com/sayu0044/Sistem-Pelaporan-Prestasi-Mahasiswa/app/model"
-	"github.com/sayu0044/Sistem-Pelaporan-Prestasi-Mahasiswa/database"
 	"gorm.io/gorm"
 )
 
 type StudentRepository interface {
-	Create(student *model.Student) error
-	FindByID(id uuid.UUID) (*model.Student, error)
-	FindByUserID(userID uuid.UUID) (*model.Student, error)
-	FindByStudentID(studentID string) (*model.Student, error)
-	FindAll() ([]model.Student, error)
-	Update(student *model.Student) error
-	Delete(id uuid.UUID) error
+	CreateStudent(ctx context.Context, student *model.Student) error
+	FindStudentByID(ctx context.Context, id uuid.UUID) (*model.Student, error)
+	FindStudentByUserID(ctx context.Context, userID uuid.UUID) (*model.Student, error)
+	FindStudentByStudentID(ctx context.Context, studentID string) (*model.Student, error)
+	FindAllStudents(ctx context.Context) ([]model.Student, error)
+	UpdateStudent(ctx context.Context, student *model.Student) error
+	DeleteStudent(ctx context.Context, id uuid.UUID) error
 }
 
 type studentRepository struct {
 	db *gorm.DB
 }
 
-func NewStudentRepository() StudentRepository {
+func NewStudentRepository(db *gorm.DB) StudentRepository {
 	return &studentRepository{
-		db: database.DB,
+		db: db,
 	}
 }
 
-func (r *studentRepository) Create(student *model.Student) error {
-	return r.db.Create(student).Error
+func (r *studentRepository) CreateStudent(ctx context.Context, student *model.Student) error {
+	return r.db.WithContext(ctx).Create(student).Error
 }
 
-func (r *studentRepository) FindByID(id uuid.UUID) (*model.Student, error) {
+func (r *studentRepository) FindStudentByID(ctx context.Context, id uuid.UUID) (*model.Student, error) {
 	var student model.Student
-	err := r.db.Preload("User").Preload("Advisor").Preload("Advisor.User").Where("id = ?", id).First(&student).Error
+	err := r.db.WithContext(ctx).Preload("User").Preload("Advisor").Preload("Advisor.User").Where("id = ?", id).First(&student).Error
 	if err != nil {
 		return nil, err
 	}
 	return &student, nil
 }
 
-func (r *studentRepository) FindByUserID(userID uuid.UUID) (*model.Student, error) {
+func (r *studentRepository) FindStudentByUserID(ctx context.Context, userID uuid.UUID) (*model.Student, error) {
 	var student model.Student
-	err := r.db.Preload("User").Preload("Advisor").Preload("Advisor.User").Where("user_id = ?", userID).First(&student).Error
+	err := r.db.WithContext(ctx).Preload("User").Preload("Advisor").Preload("Advisor.User").Where("user_id = ?", userID).First(&student).Error
 	if err != nil {
 		return nil, err
 	}
 	return &student, nil
 }
 
-func (r *studentRepository) FindByStudentID(studentID string) (*model.Student, error) {
+func (r *studentRepository) FindStudentByStudentID(ctx context.Context, studentID string) (*model.Student, error) {
 	var student model.Student
-	err := r.db.Preload("User").Preload("Advisor").Preload("Advisor.User").Where("student_id = ?", studentID).First(&student).Error
+	err := r.db.WithContext(ctx).Preload("User").Preload("Advisor").Preload("Advisor.User").Where("student_id = ?", studentID).First(&student).Error
 	if err != nil {
 		return nil, err
 	}
 	return &student, nil
 }
 
-func (r *studentRepository) FindAll() ([]model.Student, error) {
+func (r *studentRepository) FindAllStudents(ctx context.Context) ([]model.Student, error) {
 	var students []model.Student
-	err := r.db.Preload("User").Preload("Advisor").Preload("Advisor.User").Find(&students).Error
+	err := r.db.WithContext(ctx).Preload("User").Preload("Advisor").Preload("Advisor.User").Find(&students).Error
 	return students, err
 }
 
-func (r *studentRepository) Update(student *model.Student) error {
-	return r.db.Model(&model.Student{}).Where("id = ?", student.ID).Update("advisor_id", student.AdvisorID).Error
+func (r *studentRepository) UpdateStudent(ctx context.Context, student *model.Student) error {
+	return r.db.WithContext(ctx).Model(&model.Student{}).Where("id = ?", student.ID).Update("advisor_id", student.AdvisorID).Error
 }
 
-func (r *studentRepository) Delete(id uuid.UUID) error {
-	return r.db.Delete(&model.Student{}, id).Error
+func (r *studentRepository) DeleteStudent(ctx context.Context, id uuid.UUID) error {
+	return r.db.WithContext(ctx).Delete(&model.Student{}, id).Error
 }

@@ -1,15 +1,11 @@
 package middleware
 
 import (
-	"time"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/sayu0044/Sistem-Pelaporan-Prestasi-Mahasiswa/app/service"
 )
 
-// JWTMiddleware untuk validasi JWT token
-func JWTMiddleware(jwtSecret string, jwtExpiry time.Duration) fiber.Handler {
-	authService := service.NewAuthService(jwtSecret, jwtExpiry)
+func JWTMiddleware(authService service.AuthService) fiber.Handler {
 
 	return func(c *fiber.Ctx) error {
 		// Cek Authorization header

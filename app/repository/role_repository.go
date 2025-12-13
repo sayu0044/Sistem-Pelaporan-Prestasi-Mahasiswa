@@ -1,49 +1,49 @@
 package repository
 
 import (
+	"context"
 	"github.com/google/uuid"
 	"github.com/sayu0044/Sistem-Pelaporan-Prestasi-Mahasiswa/app/model"
-	"github.com/sayu0044/Sistem-Pelaporan-Prestasi-Mahasiswa/database"
 	"gorm.io/gorm"
 )
 
 type RoleRepository interface {
-	FindByID(id uuid.UUID) (*model.Role, error)
-	FindByName(name string) (*model.Role, error)
-	FindAll() ([]model.Role, error)
+	FindRoleByID(ctx context.Context, id uuid.UUID) (*model.Role, error)
+	FindRoleByName(ctx context.Context, name string) (*model.Role, error)
+	FindAllRoles(ctx context.Context) ([]model.Role, error)
 }
 
 type roleRepository struct {
 	db *gorm.DB
 }
 
-func NewRoleRepository() RoleRepository {
+func NewRoleRepository(db *gorm.DB) RoleRepository {
 	return &roleRepository{
-		db: database.DB,
+		db: db,
 	}
 }
 
-func (r *roleRepository) FindByID(id uuid.UUID) (*model.Role, error) {
+func (r *roleRepository) FindRoleByID(ctx context.Context, id uuid.UUID) (*model.Role, error) {
 	var role model.Role
-	err := r.db.Preload("Permissions").Where("id = ?", id).First(&role).Error
+	err := r.db.WithContext(ctx).Preload("Permissions").Where("id = ?", id).First(&role).Error
 	if err != nil {
 		return nil, err
 	}
 	return &role, nil
 }
 
-func (r *roleRepository) FindByName(name string) (*model.Role, error) {
+func (r *roleRepository) FindRoleByName(ctx context.Context, name string) (*model.Role, error) {
 	var role model.Role
-	err := r.db.Preload("Permissions").Where("name = ?", name).First(&role).Error
+	err := r.db.WithContext(ctx).Preload("Permissions").Where("name = ?", name).First(&role).Error
 	if err != nil {
 		return nil, err
 	}
 	return &role, nil
 }
 
-func (r *roleRepository) FindAll() ([]model.Role, error) {
+func (r *roleRepository) FindAllRoles(ctx context.Context) ([]model.Role, error) {
 	var roles []model.Role
-	err := r.db.Preload("Permissions").Find(&roles).Error
+	err := r.db.WithContext(ctx).Preload("Permissions").Find(&roles).Error
 	return roles, err
 }
 

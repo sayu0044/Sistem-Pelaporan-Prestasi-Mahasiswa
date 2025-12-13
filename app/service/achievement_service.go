@@ -35,14 +35,21 @@ type achievementService struct {
 	roleRepo            repository.RoleRepository
 }
 
-func NewAchievementService() AchievementService {
+func NewAchievementService(
+	achievementRepo repository.AchievementRepository,
+	historyRepo repository.AchievementHistoryRepository,
+	studentRepo repository.StudentRepository,
+	lecturerRepo repository.LecturerRepository,
+	userRepo repository.UserRepository,
+	roleRepo repository.RoleRepository,
+) AchievementService {
 	return &achievementService{
-		achievementRepo: repository.NewAchievementRepository(),
-		historyRepo:      repository.NewAchievementHistoryRepository(),
-		studentRepo:      repository.NewStudentRepository(),
-		lecturerRepo:     repository.NewLecturerRepository(),
-		userRepo:         repository.NewUserRepository(),
-		roleRepo:         repository.NewRoleRepository(),
+		achievementRepo: achievementRepo,
+		historyRepo:      historyRepo,
+		studentRepo:      studentRepo,
+		lecturerRepo:     lecturerRepo,
+		userRepo:         userRepo,
+		roleRepo:         roleRepo,
 	}
 }
 
@@ -125,24 +132,24 @@ type UserInfo struct {
 }
 
 // Helper functions
-func (s *achievementService) isStudent(userID uuid.UUID) (bool, *model.Student, error) {
-	student, err := s.studentRepo.FindByUserID(userID)
+func (s *achievementService) isStudent(ctx context.Context, userID uuid.UUID) (bool, *model.Student, error) {
+	student, err := s.studentRepo.FindStudentByUserID(ctx, userID)
 	if err != nil {
 		return false, nil, nil
 	}
 	return true, student, nil
 }
 
-func (s *achievementService) isLecturer(userID uuid.UUID) (bool, *model.Lecturer, error) {
-	lecturer, err := s.lecturerRepo.FindByUserID(userID)
+func (s *achievementService) isLecturer(ctx context.Context, userID uuid.UUID) (bool, *model.Lecturer, error) {
+	lecturer, err := s.lecturerRepo.FindLecturerByUserID(ctx, userID)
 	if err != nil {
 		return false, nil, nil
 	}
 	return true, lecturer, nil
 }
 
-func (s *achievementService) checkRole(userID uuid.UUID) (string, error) {
-	user, err := s.userRepo.FindByID(userID)
+func (s *achievementService) checkRole(ctx context.Context, userID uuid.UUID) (string, error) {
+	user, err := s.userRepo.FindUserByID(ctx, userID)
 	if err != nil {
 		return "", errors.New("user tidak ditemukan")
 	}
@@ -151,7 +158,7 @@ func (s *achievementService) checkRole(userID uuid.UUID) (string, error) {
 		return "", errors.New("user tidak memiliki role")
 	}
 
-	role, err := s.roleRepo.FindByID(*user.RoleID)
+	role, err := s.roleRepo.FindRoleByID(ctx, *user.RoleID)
 	if err != nil {
 		return "", errors.New("role tidak ditemukan")
 	}
@@ -173,7 +180,7 @@ func (s *achievementService) checkRole(userID uuid.UUID) (string, error) {
 // CreateAchievement (FR-003)
 func (s *achievementService) CreateAchievement(ctx context.Context, userID uuid.UUID, req *CreateAchievementRequest) (*AchievementResponse, error) {
 	// Validasi user adalah mahasiswa
-	isStudent, student, err := s.isStudent(userID)
+	isStudent, student, err := s.isStudent(ctx, userID)
 	if !isStudent || err != nil {
 		return nil, errors.New("hanya mahasiswa yang dapat membuat prestasi")
 	}
@@ -239,7 +246,7 @@ func (s *achievementService) CreateAchievement(ctx context.Context, userID uuid.
 		Status:             model.StatusDraft,
 	}
 
-	if err := s.achievementRepo.CreateReference(reference); err != nil {
+	if err := s.achievementRepo.CreateReference(ctx, reference); err != nil {
 		// Rollback: delete dari MongoDB jika reference gagal
 		s.achievementRepo.SoftDeleteAchievement(ctx, createdAchievement.ID.Hex())
 		return nil, fmt.Errorf("gagal menyimpan reference: %v", err)
@@ -255,7 +262,7 @@ func (s *achievementService) CreateAchievement(ctx context.Context, userID uuid.
 		Notes:              "Achievement dibuat",
 	}
 
-	if err := s.historyRepo.Create(history); err != nil {
+	if err := s.historyRepo.CreateHistory(ctx, history); err != nil {
 		// Log error but don't fail the request
 		fmt.Printf("Warning: Gagal membuat history: %v\n", err)
 	}
@@ -267,7 +274,7 @@ func (s *achievementService) CreateAchievement(ctx context.Context, userID uuid.
 // UpdateAchievement
 func (s *achievementService) UpdateAchievement(ctx context.Context, userID uuid.UUID, achievementID string, req *UpdateAchievementRequest) (*AchievementResponse, error) {
 	// Validasi user adalah mahasiswa
-	isStudent, student, err := s.isStudent(userID)
+	isStudent, student, err := s.isStudent(ctx, userID)
 	if !isStudent || err != nil {
 		return nil, errors.New("hanya mahasiswa yang dapat mengupdate prestasi")
 	}
@@ -409,7 +416,7 @@ func (s *achievementService) UpdateAchievement(ctx context.Context, userID uuid.
 	}
 
 	// Get reference
-	reference, err := s.achievementRepo.FindReferenceByMongoID(achievementID)
+	reference, err := s.achievementRepo.FindReferenceByMongoID(ctx, achievementID)
 	if err != nil {
 		return nil, errors.New("gagal memuat reference")
 	}
@@ -421,7 +428,7 @@ func (s *achievementService) UpdateAchievement(ctx context.Context, userID uuid.
 // DeleteAchievement (FR-005)
 func (s *achievementService) DeleteAchievement(ctx context.Context, userID uuid.UUID, achievementID string) error {
 	// Validasi user adalah mahasiswa
-	isStudent, student, err := s.isStudent(userID)
+	isStudent, student, err := s.isStudent(ctx, userID)
 	if !isStudent || err != nil {
 		return errors.New("hanya mahasiswa yang dapat menghapus prestasi")
 	}
@@ -448,9 +455,9 @@ func (s *achievementService) DeleteAchievement(ctx context.Context, userID uuid.
 	}
 
 	// Delete reference di PostgreSQL
-	reference, err := s.achievementRepo.FindReferenceByMongoID(achievementID)
+	reference, err := s.achievementRepo.FindReferenceByMongoID(ctx, achievementID)
 	if err == nil && reference != nil {
-		if err := s.achievementRepo.DeleteReference(reference.ID); err != nil {
+		if err := s.achievementRepo.DeleteReference(ctx, reference.ID); err != nil {
 			// Log error but don't fail
 			fmt.Printf("Warning: Gagal menghapus reference: %v\n", err)
 		}
@@ -462,7 +469,7 @@ func (s *achievementService) DeleteAchievement(ctx context.Context, userID uuid.
 // SubmitAchievement (FR-004)
 func (s *achievementService) SubmitAchievement(ctx context.Context, userID uuid.UUID, achievementID string) (*AchievementResponse, error) {
 	// Validasi user adalah mahasiswa
-	isStudent, student, err := s.isStudent(userID)
+	isStudent, student, err := s.isStudent(ctx, userID)
 	if !isStudent || err != nil {
 		return nil, errors.New("hanya mahasiswa yang dapat submit prestasi")
 	}
@@ -490,7 +497,7 @@ func (s *achievementService) SubmitAchievement(ctx context.Context, userID uuid.
 	}
 
 	// Update reference
-	reference, err := s.achievementRepo.FindReferenceByMongoID(achievementID)
+	reference, err := s.achievementRepo.FindReferenceByMongoID(ctx, achievementID)
 	if err != nil {
 		return nil, errors.New("gagal memuat reference")
 	}
@@ -499,7 +506,7 @@ func (s *achievementService) SubmitAchievement(ctx context.Context, userID uuid.
 	reference.Status = model.StatusSubmitted
 	reference.SubmittedAt = &now
 
-	if err := s.achievementRepo.UpdateReference(reference); err != nil {
+	if err := s.achievementRepo.UpdateReference(ctx, reference); err != nil {
 		return nil, fmt.Errorf("gagal mengupdate reference: %v", err)
 	}
 
@@ -514,7 +521,7 @@ func (s *achievementService) SubmitAchievement(ctx context.Context, userID uuid.
 		Notes:              "Achievement disubmit untuk verifikasi",
 	}
 
-	if err := s.historyRepo.Create(history); err != nil {
+	if err := s.historyRepo.CreateHistory(ctx, history); err != nil {
 		fmt.Printf("Warning: Gagal membuat history: %v\n", err)
 	}
 
@@ -531,7 +538,7 @@ func (s *achievementService) SubmitAchievement(ctx context.Context, userID uuid.
 // VerifyAchievement (FR-007)
 func (s *achievementService) VerifyAchievement(ctx context.Context, userID uuid.UUID, achievementID string) (*AchievementResponse, error) {
 	// Validasi user adalah dosen wali
-	isLecturer, lecturer, err := s.isLecturer(userID)
+	isLecturer, lecturer, err := s.isLecturer(ctx, userID)
 	if !isLecturer || err != nil {
 		return nil, errors.New("hanya dosen wali yang dapat memverifikasi prestasi")
 	}
@@ -553,7 +560,7 @@ func (s *achievementService) VerifyAchievement(ctx context.Context, userID uuid.
 		return nil, errors.New("student ID tidak valid")
 	}
 
-	student, err := s.studentRepo.FindByID(studentUUID)
+		student, err := s.studentRepo.FindStudentByID(ctx, studentUUID)
 	if err != nil {
 		return nil, errors.New("student tidak ditemukan")
 	}
@@ -570,7 +577,7 @@ func (s *achievementService) VerifyAchievement(ctx context.Context, userID uuid.
 	}
 
 	// Update reference
-	reference, err := s.achievementRepo.FindReferenceByMongoID(achievementID)
+	reference, err := s.achievementRepo.FindReferenceByMongoID(ctx, achievementID)
 	if err != nil {
 		return nil, errors.New("gagal memuat reference")
 	}
@@ -580,7 +587,7 @@ func (s *achievementService) VerifyAchievement(ctx context.Context, userID uuid.
 	reference.VerifiedAt = &now
 	reference.VerifiedBy = &userID
 
-	if err := s.achievementRepo.UpdateReference(reference); err != nil {
+	if err := s.achievementRepo.UpdateReference(ctx, reference); err != nil {
 		return nil, fmt.Errorf("gagal mengupdate reference: %v", err)
 	}
 
@@ -595,7 +602,7 @@ func (s *achievementService) VerifyAchievement(ctx context.Context, userID uuid.
 		Notes:              "Achievement diverifikasi",
 	}
 
-	if err := s.historyRepo.Create(history); err != nil {
+	if err := s.historyRepo.CreateHistory(ctx, history); err != nil {
 		fmt.Printf("Warning: Gagal membuat history: %v\n", err)
 	}
 
@@ -612,7 +619,7 @@ func (s *achievementService) VerifyAchievement(ctx context.Context, userID uuid.
 // RejectAchievement (FR-008)
 func (s *achievementService) RejectAchievement(ctx context.Context, userID uuid.UUID, achievementID string, rejectionNote string) (*AchievementResponse, error) {
 	// Validasi user adalah dosen wali
-	isLecturer, lecturer, err := s.isLecturer(userID)
+	isLecturer, lecturer, err := s.isLecturer(ctx, userID)
 	if !isLecturer || err != nil {
 		return nil, errors.New("hanya dosen wali yang dapat menolak prestasi")
 	}
@@ -639,7 +646,7 @@ func (s *achievementService) RejectAchievement(ctx context.Context, userID uuid.
 		return nil, errors.New("student ID tidak valid")
 	}
 
-	student, err := s.studentRepo.FindByID(studentUUID)
+		student, err := s.studentRepo.FindStudentByID(ctx, studentUUID)
 	if err != nil {
 		return nil, errors.New("student tidak ditemukan")
 	}
@@ -656,7 +663,7 @@ func (s *achievementService) RejectAchievement(ctx context.Context, userID uuid.
 	}
 
 	// Update reference
-	reference, err := s.achievementRepo.FindReferenceByMongoID(achievementID)
+	reference, err := s.achievementRepo.FindReferenceByMongoID(ctx, achievementID)
 	if err != nil {
 		return nil, errors.New("gagal memuat reference")
 	}
@@ -664,7 +671,7 @@ func (s *achievementService) RejectAchievement(ctx context.Context, userID uuid.
 	reference.Status = model.StatusRejected
 	reference.RejectionNote = rejectionNote
 
-	if err := s.achievementRepo.UpdateReference(reference); err != nil {
+	if err := s.achievementRepo.UpdateReference(ctx, reference); err != nil {
 		return nil, fmt.Errorf("gagal mengupdate reference: %v", err)
 	}
 
@@ -679,7 +686,7 @@ func (s *achievementService) RejectAchievement(ctx context.Context, userID uuid.
 		Notes:              fmt.Sprintf("Achievement ditolak: %s", rejectionNote),
 	}
 
-	if err := s.historyRepo.Create(history); err != nil {
+	if err := s.historyRepo.CreateHistory(ctx, history); err != nil {
 		fmt.Printf("Warning: Gagal membuat history: %v\n", err)
 	}
 
@@ -702,7 +709,7 @@ func (s *achievementService) GetAchievements(ctx context.Context, userID uuid.UU
 		limit = 10
 	}
 
-	role, err := s.checkRole(userID)
+	role, err := s.checkRole(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -714,7 +721,7 @@ func (s *achievementService) GetAchievements(ctx context.Context, userID uuid.UU
 
 	if role == "student" {
 		// Mahasiswa melihat achievement sendiri
-		isStudent, student, err := s.isStudent(userID)
+		isStudent, student, err := s.isStudent(ctx, userID)
 		if !isStudent || err != nil {
 			return nil, errors.New("user tidak ditemukan sebagai mahasiswa")
 		}
@@ -726,7 +733,7 @@ func (s *achievementService) GetAchievements(ctx context.Context, userID uuid.UU
 		}
 
 		// Get references
-		references, err = s.achievementRepo.FindReferencesByStudentIDs(studentIDs)
+		references, err = s.achievementRepo.FindReferencesByStudentIDs(ctx, studentIDs)
 		if err != nil {
 			return nil, fmt.Errorf("gagal memuat references: %v", err)
 		}
@@ -734,13 +741,13 @@ func (s *achievementService) GetAchievements(ctx context.Context, userID uuid.UU
 		total = int64(len(achievements))
 	} else if role == "lecturer" {
 		// Dosen wali melihat achievement mahasiswa bimbingannya
-		isLecturer, lecturer, err := s.isLecturer(userID)
+		isLecturer, lecturer, err := s.isLecturer(ctx, userID)
 		if !isLecturer || err != nil {
 			return nil, errors.New("user tidak ditemukan sebagai dosen")
 		}
 
 		// Get advisees
-		advisees, err := s.lecturerRepo.FindAdvisees(lecturer.ID)
+		advisees, err := s.lecturerRepo.FindAdvisees(ctx, lecturer.ID)
 		if err != nil {
 			return nil, fmt.Errorf("gagal memuat mahasiswa bimbingan: %v", err)
 		}
@@ -761,7 +768,7 @@ func (s *achievementService) GetAchievements(ctx context.Context, userID uuid.UU
 		}
 
 		// Get references dengan pagination
-		references, total, err = s.achievementRepo.FindReferencesWithPagination(studentIDs, page, limit)
+		references, total, err = s.achievementRepo.FindReferencesWithPagination(ctx, studentIDs, page, limit)
 		if err != nil {
 			return nil, fmt.Errorf("gagal memuat references: %v", err)
 		}
@@ -775,7 +782,7 @@ func (s *achievementService) GetAchievements(ctx context.Context, userID uuid.UU
 		}
 	} else {
 		// Admin bisa lihat semua
-		allStudents, err := s.studentRepo.FindAll()
+		allStudents, err := s.studentRepo.FindAllStudents(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("gagal memuat students: %v", err)
 		}
@@ -784,7 +791,7 @@ func (s *achievementService) GetAchievements(ctx context.Context, userID uuid.UU
 			studentIDs = append(studentIDs, student.ID)
 		}
 
-		references, total, err = s.achievementRepo.FindReferencesWithPagination(studentIDs, page, limit)
+		references, total, err = s.achievementRepo.FindReferencesWithPagination(ctx, studentIDs, page, limit)
 		if err != nil {
 			return nil, fmt.Errorf("gagal memuat references: %v", err)
 		}
@@ -825,7 +832,7 @@ func (s *achievementService) GetAchievements(ctx context.Context, userID uuid.UU
 		}
 
 		studentUUID, _ := uuid.Parse(achievement.StudentID)
-		student, _ := s.studentRepo.FindByID(studentUUID)
+		student, _ := s.studentRepo.FindStudentByID(ctx, studentUUID)
 
 		responseData = append(responseData, *s.mapToAchievementResponse(ctx, &achievement, ref, student))
 	}
@@ -853,20 +860,20 @@ func (s *achievementService) GetAchievementByID(ctx context.Context, userID uuid
 	}
 
 	// Get reference
-	reference, err := s.achievementRepo.FindReferenceByMongoID(achievementID)
+	reference, err := s.achievementRepo.FindReferenceByMongoID(ctx, achievementID)
 	if err != nil {
 		return nil, errors.New("gagal memuat reference")
 	}
 
 	// Check access
-	role, err := s.checkRole(userID)
+	role, err := s.checkRole(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
 	if role == "student" {
 		// Mahasiswa hanya bisa lihat achievement sendiri
-		isStudent, student, err := s.isStudent(userID)
+		isStudent, student, err := s.isStudent(ctx, userID)
 		if !isStudent || err != nil {
 			return nil, errors.New("user tidak ditemukan sebagai mahasiswa")
 		}
@@ -879,7 +886,7 @@ func (s *achievementService) GetAchievementByID(ctx context.Context, userID uuid
 		return result, nil
 	} else if role == "lecturer" {
 		// Dosen wali hanya bisa lihat achievement mahasiswa bimbingannya
-		isLecturer, lecturer, err := s.isLecturer(userID)
+		isLecturer, lecturer, err := s.isLecturer(ctx, userID)
 		if !isLecturer || err != nil {
 			return nil, errors.New("user tidak ditemukan sebagai dosen")
 		}
@@ -889,7 +896,7 @@ func (s *achievementService) GetAchievementByID(ctx context.Context, userID uuid
 			return nil, errors.New("student ID tidak valid")
 		}
 
-		student, err := s.studentRepo.FindByID(studentUUID)
+		student, err := s.studentRepo.FindStudentByID(ctx, studentUUID)
 		if err != nil {
 			return nil, errors.New("student tidak ditemukan")
 		}
@@ -904,7 +911,7 @@ func (s *achievementService) GetAchievementByID(ctx context.Context, userID uuid
 
 	// Admin bisa lihat semua
 	studentUUID, _ := uuid.Parse(achievement.StudentID)
-	student, _ := s.studentRepo.FindByID(studentUUID)
+	student, _ := s.studentRepo.FindStudentByID(ctx, studentUUID)
 
 	result := s.mapToAchievementResponse(ctx, achievement, reference, student)
 	return result, nil
@@ -913,19 +920,19 @@ func (s *achievementService) GetAchievementByID(ctx context.Context, userID uuid
 // GetAchievementHistory
 func (s *achievementService) GetAchievementHistory(ctx context.Context, userID uuid.UUID, achievementID string) ([]AchievementHistoryResponse, error) {
 	// Get reference
-	reference, err := s.achievementRepo.FindReferenceByMongoID(achievementID)
+	reference, err := s.achievementRepo.FindReferenceByMongoID(ctx, achievementID)
 	if err != nil {
 		return nil, errors.New("achievement tidak ditemukan")
 	}
 
 	// Check access (same as GetAchievementByID)
-	role, err := s.checkRole(userID)
+	role, err := s.checkRole(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
 	if role == "student" {
-		isStudent, student, err := s.isStudent(userID)
+		isStudent, student, err := s.isStudent(ctx, userID)
 		if !isStudent || err != nil {
 			return nil, errors.New("user tidak ditemukan sebagai mahasiswa")
 		}
@@ -939,7 +946,7 @@ func (s *achievementService) GetAchievementHistory(ctx context.Context, userID u
 			return nil, errors.New("anda tidak memiliki akses untuk melihat history achievement ini")
 		}
 	} else if role == "lecturer" {
-		isLecturer, lecturer, err := s.isLecturer(userID)
+		isLecturer, lecturer, err := s.isLecturer(ctx, userID)
 		if !isLecturer || err != nil {
 			return nil, errors.New("user tidak ditemukan sebagai dosen")
 		}
@@ -954,7 +961,7 @@ func (s *achievementService) GetAchievementHistory(ctx context.Context, userID u
 			return nil, errors.New("student ID tidak valid")
 		}
 
-		student, err := s.studentRepo.FindByID(studentUUID)
+		student, err := s.studentRepo.FindStudentByID(ctx, studentUUID)
 		if err != nil {
 			return nil, errors.New("student tidak ditemukan")
 		}
@@ -965,7 +972,7 @@ func (s *achievementService) GetAchievementHistory(ctx context.Context, userID u
 	}
 
 	// Get history
-	histories, err := s.historyRepo.FindByAchievementRefID(reference.ID)
+	histories, err := s.historyRepo.FindHistoriesByAchievementRefID(ctx, reference.ID)
 	if err != nil {
 		return nil, fmt.Errorf("gagal memuat history: %v", err)
 	}
@@ -999,7 +1006,7 @@ func (s *achievementService) GetAchievementHistory(ctx context.Context, userID u
 // UploadAttachment
 func (s *achievementService) UploadAttachment(ctx context.Context, userID uuid.UUID, achievementID string, filePath string) (string, error) {
 	// Validasi user adalah mahasiswa
-	isStudent, student, err := s.isStudent(userID)
+	isStudent, student, err := s.isStudent(ctx, userID)
 	if !isStudent || err != nil {
 		return "", errors.New("hanya mahasiswa yang dapat upload attachment")
 	}
