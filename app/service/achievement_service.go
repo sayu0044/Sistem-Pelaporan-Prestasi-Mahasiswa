@@ -28,7 +28,6 @@ type AchievementService interface {
 
 type achievementService struct {
 	achievementRepo     repository.AchievementRepository
-	historyRepo         repository.AchievementHistoryRepository
 	studentRepo         repository.StudentRepository
 	lecturerRepo        repository.LecturerRepository
 	userRepo            repository.UserRepository
@@ -37,7 +36,6 @@ type achievementService struct {
 
 func NewAchievementService(
 	achievementRepo repository.AchievementRepository,
-	historyRepo repository.AchievementHistoryRepository,
 	studentRepo repository.StudentRepository,
 	lecturerRepo repository.LecturerRepository,
 	userRepo repository.UserRepository,
@@ -45,7 +43,6 @@ func NewAchievementService(
 ) AchievementService {
 	return &achievementService{
 		achievementRepo: achievementRepo,
-		historyRepo:      historyRepo,
 		studentRepo:      studentRepo,
 		lecturerRepo:     lecturerRepo,
 		userRepo:         userRepo,
@@ -252,20 +249,6 @@ func (s *achievementService) CreateAchievement(ctx context.Context, userID uuid.
 		return nil, fmt.Errorf("gagal menyimpan reference: %v", err)
 	}
 
-	// Create initial history
-	history := &model.AchievementHistory{
-		AchievementRefID:   reference.ID,
-		MongoAchievementID: createdAchievement.ID.Hex(),
-		OldStatus:          nil, // Null untuk status awal (belum ada status sebelumnya)
-		NewStatus:          model.StatusDraft,
-		ChangedBy:          userID,
-		Notes:              "Achievement dibuat",
-	}
-
-	if err := s.historyRepo.CreateHistory(ctx, history); err != nil {
-		// Log error but don't fail the request
-		fmt.Printf("Warning: Gagal membuat history: %v\n", err)
-	}
 
 	result := s.mapToAchievementResponse(ctx, createdAchievement, reference, student)
 	return result, nil
@@ -510,20 +493,6 @@ func (s *achievementService) SubmitAchievement(ctx context.Context, userID uuid.
 		return nil, fmt.Errorf("gagal mengupdate reference: %v", err)
 	}
 
-	// Create history
-	oldStatus := model.StatusDraft
-	history := &model.AchievementHistory{
-		AchievementRefID:   reference.ID,
-		MongoAchievementID: achievementID,
-		OldStatus:          &oldStatus,
-		NewStatus:          model.StatusSubmitted,
-		ChangedBy:          userID,
-		Notes:              "Achievement disubmit untuk verifikasi",
-	}
-
-	if err := s.historyRepo.CreateHistory(ctx, history); err != nil {
-		fmt.Printf("Warning: Gagal membuat history: %v\n", err)
-	}
 
 	// Get updated achievement
 	updatedAchievement, err := s.achievementRepo.FindAchievementByID(ctx, achievementID)
@@ -591,20 +560,6 @@ func (s *achievementService) VerifyAchievement(ctx context.Context, userID uuid.
 		return nil, fmt.Errorf("gagal mengupdate reference: %v", err)
 	}
 
-	// Create history
-	oldStatus := model.StatusSubmitted
-	history := &model.AchievementHistory{
-		AchievementRefID:   reference.ID,
-		MongoAchievementID: achievementID,
-		OldStatus:          &oldStatus,
-		NewStatus:          model.StatusVerified,
-		ChangedBy:          userID,
-		Notes:              "Achievement diverifikasi",
-	}
-
-	if err := s.historyRepo.CreateHistory(ctx, history); err != nil {
-		fmt.Printf("Warning: Gagal membuat history: %v\n", err)
-	}
 
 	// Get updated achievement
 	updatedAchievement, err := s.achievementRepo.FindAchievementByID(ctx, achievementID)
@@ -675,20 +630,6 @@ func (s *achievementService) RejectAchievement(ctx context.Context, userID uuid.
 		return nil, fmt.Errorf("gagal mengupdate reference: %v", err)
 	}
 
-	// Create history
-	oldStatus := model.StatusSubmitted
-	history := &model.AchievementHistory{
-		AchievementRefID:   reference.ID,
-		MongoAchievementID: achievementID,
-		OldStatus:          &oldStatus,
-		NewStatus:          model.StatusRejected,
-		ChangedBy:          userID,
-		Notes:              fmt.Sprintf("Achievement ditolak: %s", rejectionNote),
-	}
-
-	if err := s.historyRepo.CreateHistory(ctx, history); err != nil {
-		fmt.Printf("Warning: Gagal membuat history: %v\n", err)
-	}
 
 	// Get updated achievement
 	updatedAchievement, err := s.achievementRepo.FindAchievementByID(ctx, achievementID)
@@ -971,32 +912,78 @@ func (s *achievementService) GetAchievementHistory(ctx context.Context, userID u
 		}
 	}
 
-	// Get history
-	histories, err := s.historyRepo.FindHistoriesByAchievementRefID(ctx, reference.ID)
+	// Build history from achievement_reference
+	response := []AchievementHistoryResponse{}
+
+	// Get student info once
+	student, err := s.studentRepo.FindStudentByID(ctx, reference.StudentID)
 	if err != nil {
-		return nil, fmt.Errorf("gagal memuat history: %v", err)
+		return nil, errors.New("student tidak ditemukan")
 	}
 
-	response := []AchievementHistoryResponse{}
-	for _, history := range histories {
+	// History 1: Created (draft)
+	var createdByUser *UserInfo
+	user, err := s.userRepo.FindUserByID(ctx, student.UserID)
+	if err == nil && user != nil {
+		createdByUser = &UserInfo{
+			ID:       user.ID.String(),
+			Username: user.Username,
+			FullName: user.FullName,
+			Email:    user.Email,
+		}
+	}
+
+	response = append(response, AchievementHistoryResponse{
+		ID:            reference.ID.String(),
+		OldStatus:     nil,
+		NewStatus:     model.StatusDraft,
+		ChangedBy:     student.UserID.String(),
+		ChangedByUser: createdByUser,
+		Notes:         "Achievement dibuat",
+		CreatedAt:     reference.CreatedAt,
+	})
+
+	// History 2: Submitted (if exists)
+	if reference.SubmittedAt != nil {
+		oldStatus := model.StatusDraft
+		response = append(response, AchievementHistoryResponse{
+			ID:            reference.ID.String() + "_submitted",
+			OldStatus:     &oldStatus,
+			NewStatus:     model.StatusSubmitted,
+			ChangedBy:     student.UserID.String(),
+			ChangedByUser: createdByUser,
+			Notes:         "Achievement disubmit untuk verifikasi",
+			CreatedAt:     *reference.SubmittedAt,
+		})
+	}
+
+	// History 3: Verified or Rejected (if exists)
+	if reference.VerifiedAt != nil && reference.VerifiedBy != nil {
 		var changedByUser *UserInfo
-		if history.ChangedByUser.ID != uuid.Nil {
+		user, err := s.userRepo.FindUserByID(ctx, *reference.VerifiedBy)
+		if err == nil && user != nil {
 			changedByUser = &UserInfo{
-				ID:       history.ChangedByUser.ID.String(),
-				Username: history.ChangedByUser.Username,
-				FullName: history.ChangedByUser.FullName,
-				Email:    history.ChangedByUser.Email,
+				ID:       user.ID.String(),
+				Username: user.Username,
+				FullName: user.FullName,
+				Email:    user.Email,
 			}
 		}
 
+		oldStatus := model.StatusSubmitted
+		notes := "Achievement diverifikasi"
+		if reference.Status == model.StatusRejected {
+			notes = fmt.Sprintf("Achievement ditolak: %s", reference.RejectionNote)
+		}
+
 		response = append(response, AchievementHistoryResponse{
-			ID:            history.ID.String(),
-			OldStatus:     history.OldStatus,
-			NewStatus:     history.NewStatus,
-			ChangedBy:     history.ChangedBy.String(),
+			ID:            reference.ID.String() + "_verified",
+			OldStatus:     &oldStatus,
+			NewStatus:     reference.Status,
+			ChangedBy:     reference.VerifiedBy.String(),
 			ChangedByUser: changedByUser,
-			Notes:         history.Notes,
-			CreatedAt:     history.CreatedAt,
+			Notes:         notes,
+			CreatedAt:     *reference.VerifiedAt,
 		})
 	}
 

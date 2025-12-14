@@ -20,11 +20,10 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB, mongoDB *mongo.Database, jwtSec
 	lecturerRepo := repository.NewLecturerRepository(db)
 	studentRepo := repository.NewStudentRepository(db)
 	achievementRepo := repository.NewAchievementRepository(db, mongoDB)
-	historyRepo := repository.NewAchievementHistoryRepository(db)
 
 	authService := service.NewAuthService(userRepo, roleRepo, jwtSecret, jwtExpiry)
 	userService := service.NewUserService(userRepo, roleRepo, lecturerRepo, studentRepo, authService)
-	achievementService := service.NewAchievementService(achievementRepo, historyRepo, studentRepo, lecturerRepo, userRepo, roleRepo)
+	achievementService := service.NewAchievementService(achievementRepo, studentRepo, lecturerRepo, userRepo, roleRepo)
 	studentService := service.NewStudentService(studentRepo, lecturerRepo, achievementRepo)
 	lecturerService := service.NewLecturerService(lecturerRepo, studentRepo)
 	reportService := service.NewReportService(achievementRepo, studentRepo, lecturerRepo, userRepo, roleRepo)
