@@ -1,0 +1,2232 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Sistem Pelaporan Prestasi Mahasiswa API",
+    "version": "1.0.0",
+    "description": "REST API untuk sistem pelaporan prestasi mahasiswa dengan dukungan Role-Based Access Control (RBAC), JWT Authentication, Achievement management dengan field dinamis, Verifikasi prestasi oleh dosen wali, dan Reporting dan analytics",
+    "contact": {
+      "name": "API Support",
+      "email": "support@example.com"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  },
+  "host": "localhost:3000",
+  "basePath": "/api/v1",
+  "schemes": ["http", "https"],
+  "consumes": ["application/json", "multipart/form-data"],
+  "produces": ["application/json"],
+  "securityDefinitions": {
+    "bearerAuth": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header",
+      "description": "JWT token dari login endpoint. Format: Bearer <token>"
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Health",
+      "description": "Health check endpoints"
+    },
+    {
+      "name": "Authentication",
+      "description": "Authentication and authorization endpoints"
+    },
+    {
+      "name": "Users",
+      "description": "User management endpoints (Admin only)"
+    },
+    {
+      "name": "Achievements",
+      "description": "Achievement management endpoints"
+    },
+    {
+      "name": "Students",
+      "description": "Student management endpoints"
+    },
+    {
+      "name": "Lecturers",
+      "description": "Lecturer management endpoints"
+    },
+    {
+      "name": "Reports",
+      "description": "Reporting and analytics endpoints"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Health check",
+        "description": "Check if API is running",
+        "operationId": "healthCheck",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "API is running",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "API Sistem Pelaporan Prestasi Mahasiswa"
+                },
+                "status": {
+                  "type": "string",
+                  "example": "running"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Login user",
+        "description": "Authenticate user dengan username dan password, mendapatkan JWT token",
+        "operationId": "login",
+        "security": [],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/LoginRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Login berhasil",
+            "schema": {
+              "$ref": "#/definitions/LoginResponse"
+            }
+          },
+          "401": {
+            "description": "Username atau password salah",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Refresh token",
+        "description": "Refresh JWT token menggunakan refresh token",
+        "operationId": "refreshToken",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "type": "string",
+            "description": "Bearer token"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Token berhasil di-refresh",
+            "schema": {
+              "$ref": "#/definitions/LoginResponse"
+            }
+          },
+          "401": {
+            "description": "Token tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Get current user info",
+        "description": "Mendapatkan informasi user dari JWT token",
+        "operationId": "getMe",
+        "responses": {
+          "200": {
+            "description": "User info berhasil diambil",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "user_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "username": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string"
+                        },
+                        "permissions": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/auth/profile": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Get user profile",
+        "description": "Mendapatkan profile lengkap user yang sedang login",
+        "operationId": "getProfile",
+        "responses": {
+          "200": {
+            "description": "Profile berhasil diambil",
+            "schema": {
+              "$ref": "#/definitions/ProfileResponse"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "User tidak ditemukan",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Logout user",
+        "description": "Logout user (saat ini hanya return success, token masih valid sampai expired)",
+        "operationId": "logout",
+        "responses": {
+          "200": {
+            "description": "Logout berhasil",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "user_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "username": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get all users",
+        "description": "Mendapatkan daftar semua users (Admin only)",
+        "operationId": "getAllUsers",
+        "responses": {
+          "200": {
+            "description": "Daftar users berhasil diambil",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/UserResponse"
+                  }
+                },
+                "total": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - tidak memiliki permission",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Users"],
+        "summary": "Create user",
+        "description": "Membuat user baru dengan role dan profile (Admin only)",
+        "operationId": "createUser",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CreateUserRequest"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "User berhasil dibuat",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "message": {
+                  "type": "string",
+                  "example": "User berhasil dibuat"
+                },
+                "data": {
+                  "$ref": "#/definitions/UserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get user by ID",
+        "description": "Mendapatkan detail user berdasarkan ID (Admin only)",
+        "operationId": "getUserByID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "description": "User ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User berhasil diambil",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "data": {
+                  "$ref": "#/definitions/UserResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User tidak ditemukan",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Users"],
+        "summary": "Update user",
+        "description": "Update informasi user (Admin only)",
+        "operationId": "updateUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "description": "User ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UpdateUserRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User berhasil diupdate",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "message": {
+                  "type": "string",
+                  "example": "User berhasil diupdate"
+                },
+                "data": {
+                  "$ref": "#/definitions/UserResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User tidak ditemukan",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Users"],
+        "summary": "Delete user",
+        "description": "Menghapus user (Admin only)",
+        "operationId": "deleteUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "description": "User ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User berhasil dihapus",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "message": {
+                  "type": "string",
+                  "example": "User berhasil dihapus"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User tidak ditemukan",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/users/{id}/role": {
+      "put": {
+        "tags": ["Users"],
+        "summary": "Update user role",
+        "description": "Update role user (Admin only)",
+        "operationId": "updateUserRole",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "description": "User ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["role_id"],
+              "properties": {
+                "role_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "Role ID"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Role berhasil diupdate",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "message": {
+                  "type": "string",
+                  "example": "Role user berhasil diupdate"
+                },
+                "data": {
+                  "$ref": "#/definitions/UserResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User atau role tidak ditemukan",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/achievements": {
+      "get": {
+        "tags": ["Achievements"],
+        "summary": "List achievements",
+        "description": "Mendapatkan daftar achievements. Filter berdasarkan role: Mahasiswa (hanya achievement sendiri), Dosen Wali (achievement mahasiswa bimbingannya), Admin (semua achievements)",
+        "operationId": "listAchievements",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "type": "integer",
+            "default": 1,
+            "minimum": 1,
+            "description": "Page number"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "type": "integer",
+            "default": 10,
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Items per page"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "type": "string",
+            "enum": ["draft", "submitted", "verified", "rejected"],
+            "description": "Filter by status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar achievements berhasil diambil",
+            "schema": {
+              "$ref": "#/definitions/AchievementListResponse"
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Achievements"],
+        "summary": "Create achievement",
+        "description": "Membuat achievement baru (Mahasiswa only)",
+        "operationId": "createAchievement",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CreateAchievementRequest"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Achievement berhasil dibuat",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "message": {
+                  "type": "string",
+                  "example": "Achievement berhasil dibuat"
+                },
+                "data": {
+                  "$ref": "#/definitions/AchievementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/achievements/{id}": {
+      "get": {
+        "tags": ["Achievements"],
+        "summary": "Get achievement by ID",
+        "description": "Mendapatkan detail achievement berdasarkan ID",
+        "operationId": "getAchievementByID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Achievement ID (MongoDB ObjectID)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Achievement berhasil diambil",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "data": {
+                  "$ref": "#/definitions/AchievementResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Achievement tidak ditemukan",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Achievements"],
+        "summary": "Update achievement",
+        "description": "Update achievement (Mahasiswa only, hanya status draft)",
+        "operationId": "updateAchievement",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Achievement ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UpdateAchievementRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Achievement berhasil diupdate",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "message": {
+                  "type": "string",
+                  "example": "Achievement berhasil diupdate"
+                },
+                "data": {
+                  "$ref": "#/definitions/AchievementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Achievements"],
+        "summary": "Delete achievement",
+        "description": "Menghapus achievement (Mahasiswa only, hanya status draft)",
+        "operationId": "deleteAchievement",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Achievement ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Achievement berhasil dihapus",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "message": {
+                  "type": "string",
+                  "example": "Achievement berhasil dihapus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/achievements/{id}/submit": {
+      "post": {
+        "tags": ["Achievements"],
+        "summary": "Submit achievement for verification",
+        "description": "Submit achievement untuk verifikasi (Mahasiswa only, status harus draft)",
+        "operationId": "submitAchievement",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Achievement ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Achievement berhasil disubmit",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "message": {
+                  "type": "string",
+                  "example": "Achievement berhasil disubmit untuk verifikasi"
+                },
+                "data": {
+                  "$ref": "#/definitions/AchievementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/achievements/{id}/verify": {
+      "post": {
+        "tags": ["Achievements"],
+        "summary": "Verify achievement",
+        "description": "Verifikasi achievement (Dosen Wali only, status harus submitted)",
+        "operationId": "verifyAchievement",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Achievement ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Achievement berhasil diverifikasi",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "message": {
+                  "type": "string",
+                  "example": "Achievement berhasil diverifikasi"
+                },
+                "data": {
+                  "$ref": "#/definitions/AchievementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/achievements/{id}/reject": {
+      "post": {
+        "tags": ["Achievements"],
+        "summary": "Reject achievement",
+        "description": "Menolak achievement dengan catatan (Dosen Wali only, status harus submitted)",
+        "operationId": "rejectAchievement",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Achievement ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["rejection_note"],
+              "properties": {
+                "rejection_note": {
+                  "type": "string",
+                  "description": "Alasan penolakan"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Achievement ditolak",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "message": {
+                  "type": "string",
+                  "example": "Achievement ditolak"
+                },
+                "data": {
+                  "$ref": "#/definitions/AchievementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/achievements/{id}/history": {
+      "get": {
+        "tags": ["Achievements"],
+        "summary": "Get achievement history",
+        "description": "Mendapatkan history perubahan status achievement",
+        "operationId": "getAchievementHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Achievement ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "History berhasil diambil",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/AchievementHistoryResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/achievements/{id}/attachments": {
+      "post": {
+        "tags": ["Achievements"],
+        "summary": "Upload attachment",
+        "description": "Upload file attachment untuk achievement (Mahasiswa only, status harus draft)",
+        "operationId": "uploadAttachment",
+        "consumes": ["multipart/form-data"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Achievement ID"
+          },
+          {
+            "name": "file",
+            "in": "formData",
+            "required": true,
+            "type": "file",
+            "description": "File attachment (max 10MB, PDF, JPG, PNG, DOC, DOCX)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File berhasil diupload",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "message": {
+                  "type": "string",
+                  "example": "File berhasil diupload"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "file_path": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/students": {
+      "get": {
+        "tags": ["Students"],
+        "summary": "Get all students",
+        "description": "Mendapatkan daftar semua students",
+        "operationId": "getAllStudents",
+        "responses": {
+          "200": {
+            "description": "Daftar students berhasil diambil",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/StudentResponse"
+                  }
+                },
+                "total": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/students/{id}": {
+      "get": {
+        "tags": ["Students"],
+        "summary": "Get student by ID",
+        "description": "Mendapatkan detail student berdasarkan ID",
+        "operationId": "getStudentByID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "description": "Student ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Student berhasil diambil",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "data": {
+                  "$ref": "#/definitions/StudentResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Student tidak ditemukan",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/students/{id}/achievements": {
+      "get": {
+        "tags": ["Students"],
+        "summary": "Get student achievements",
+        "description": "Mendapatkan daftar achievements milik student",
+        "operationId": "getStudentAchievements",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "description": "Student ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar achievements berhasil diambil",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/AchievementResponse"
+                  }
+                },
+                "total": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Student tidak ditemukan",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/students/{id}/advisor": {
+      "put": {
+        "tags": ["Students"],
+        "summary": "Update student advisor",
+        "description": "Update dosen wali untuk student (Admin only)",
+        "operationId": "updateStudentAdvisor",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "description": "Student ID"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "advisor_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "Lecturer ID (nullable)"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dosen wali berhasil diupdate",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "message": {
+                  "type": "string",
+                  "example": "Dosen wali berhasil diupdate"
+                },
+                "data": {
+                  "$ref": "#/definitions/StudentResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Student atau lecturer tidak ditemukan",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/lecturers": {
+      "get": {
+        "tags": ["Lecturers"],
+        "summary": "Get all lecturers",
+        "description": "Mendapatkan daftar semua lecturers",
+        "operationId": "getAllLecturers",
+        "responses": {
+          "200": {
+            "description": "Daftar lecturers berhasil diambil",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/LecturerResponse"
+                  }
+                },
+                "total": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/lecturers/{id}/advisees": {
+      "get": {
+        "tags": ["Lecturers"],
+        "summary": "Get lecturer advisees",
+        "description": "Mendapatkan daftar mahasiswa bimbingan dari lecturer",
+        "operationId": "getLecturerAdvisees",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "description": "Lecturer ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar advisees berhasil diambil",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/StudentResponse"
+                  }
+                },
+                "total": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Lecturer tidak ditemukan",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/reports/statistics": {
+      "get": {
+        "tags": ["Reports"],
+        "summary": "Get achievement statistics",
+        "description": "Mendapatkan statistik prestasi. Filter berdasarkan role: Mahasiswa (statistik sendiri), Dosen Wali (statistik mahasiswa bimbingannya), Admin (statistik semua)",
+        "operationId": "getStatistics",
+        "responses": {
+          "200": {
+            "description": "Statistik berhasil diambil",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "data": {
+                  "$ref": "#/definitions/StatisticsResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/reports/student/{id}": {
+      "get": {
+        "tags": ["Reports"],
+        "summary": "Get student statistics",
+        "description": "Mendapatkan statistik prestasi untuk student tertentu",
+        "operationId": "getStudentStatistics",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "uuid",
+            "description": "Student ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statistik berhasil diambil",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "boolean",
+                  "example": false
+                },
+                "data": {
+                  "$ref": "#/definitions/StudentStatisticsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - tidak memiliki akses",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "Student tidak ditemukan",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "ErrorResponse": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "boolean",
+          "example": true
+        },
+        "message": {
+          "type": "string",
+          "example": "Pesan error dalam bahasa Indonesia"
+        }
+      }
+    },
+    "LoginRequest": {
+      "type": "object",
+      "required": ["username", "password"],
+      "properties": {
+        "username": {
+          "type": "string",
+          "example": "mahasiswa123"
+        },
+        "password": {
+          "type": "string",
+          "format": "password",
+          "example": "SecurePass123!"
+        }
+      }
+    },
+    "LoginResponse": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "boolean",
+          "example": false
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "token": {
+              "type": "string",
+              "example": "eyJhbGciOiJIUzI1NiIs..."
+            },
+            "refreshToken": {
+              "type": "string",
+              "example": "eyJhbGciOiJIUzI1NiIs..."
+            },
+            "user": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "username": {
+                  "type": "string"
+                },
+                "fullName": {
+                  "type": "string"
+                },
+                "role": {
+                  "type": "string"
+                },
+                "permissions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "ProfileResponse": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "boolean",
+          "example": false
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "username": {
+              "type": "string"
+            },
+            "fullName": {
+              "type": "string"
+            },
+            "role": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            },
+            "permissions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "action": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "isActive": {
+              "type": "boolean"
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updatedAt": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      }
+    },
+    "UserResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "username": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "full_name": {
+          "type": "string"
+        },
+        "role_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "role": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          }
+        },
+        "permissions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "resource": {
+                "type": "string"
+              },
+              "action": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "is_active": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "CreateUserRequest": {
+      "type": "object",
+      "required": ["username", "email", "password", "full_name", "role_id"],
+      "properties": {
+        "username": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "password": {
+          "type": "string",
+          "format": "password"
+        },
+        "full_name": {
+          "type": "string"
+        },
+        "role_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "is_active": {
+          "type": "boolean"
+        },
+        "lecturer_id": {
+          "type": "string",
+          "description": "Required jika role adalah dosen"
+        },
+        "department": {
+          "type": "string"
+        },
+        "student_id": {
+          "type": "string",
+          "description": "Required jika role adalah mahasiswa"
+        },
+        "program_study": {
+          "type": "string"
+        },
+        "academic_year": {
+          "type": "string"
+        },
+        "advisor_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "UpdateUserRequest": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "full_name": {
+          "type": "string"
+        },
+        "role_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "is_active": {
+          "type": "boolean"
+        }
+      }
+    },
+    "AchievementType": {
+      "type": "string",
+      "enum": ["academic", "competition", "organization", "publication", "certification", "other"]
+    },
+    "AchievementStatus": {
+      "type": "string",
+      "enum": ["draft", "submitted", "verified", "rejected"]
+    },
+    "CompetitionLevel": {
+      "type": "string",
+      "enum": ["international", "national", "regional", "local"]
+    },
+    "PublicationType": {
+      "type": "string",
+      "enum": ["journal", "conference", "book"]
+    },
+    "AchievementDetails": {
+      "type": "object",
+      "properties": {
+        "competitionName": {
+          "type": "string"
+        },
+        "competitionLevel": {
+          "$ref": "#/definitions/CompetitionLevel"
+        },
+        "rank": {
+          "type": "integer"
+        },
+        "medalType": {
+          "type": "string"
+        },
+        "publicationType": {
+          "$ref": "#/definitions/PublicationType"
+        },
+        "publicationTitle": {
+          "type": "string"
+        },
+        "authors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "publisher": {
+          "type": "string"
+        },
+        "issn": {
+          "type": "string"
+        },
+        "organizationName": {
+          "type": "string"
+        },
+        "position": {
+          "type": "string"
+        },
+        "period": {
+          "type": "object",
+          "properties": {
+            "start": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "end": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "certificationName": {
+          "type": "string"
+        },
+        "issuedBy": {
+          "type": "string"
+        },
+        "certificationNumber": {
+          "type": "string"
+        },
+        "validUntil": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "eventDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "location": {
+          "type": "string"
+        },
+        "organizer": {
+          "type": "string"
+        },
+        "score": {
+          "type": "number"
+        },
+        "customFields": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "Attachment": {
+      "type": "object",
+      "properties": {
+        "file_name": {
+          "type": "string"
+        },
+        "file_url": {
+          "type": "string"
+        },
+        "file_type": {
+          "type": "string"
+        },
+        "uploaded_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "CreateAchievementRequest": {
+      "type": "object",
+      "required": ["achievement_type", "title", "description"],
+      "properties": {
+        "achievement_type": {
+          "$ref": "#/definitions/AchievementType"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "details": {
+          "$ref": "#/definitions/AchievementDetails"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "points": {
+          "type": "number",
+          "default": 0
+        }
+      }
+    },
+    "UpdateAchievementRequest": {
+      "type": "object",
+      "properties": {
+        "achievement_type": {
+          "$ref": "#/definitions/AchievementType"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "details": {
+          "$ref": "#/definitions/AchievementDetails"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "points": {
+          "type": "number"
+        }
+      }
+    },
+    "AchievementResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "student_id": {
+          "type": "string"
+        },
+        "student": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "student_id": {
+              "type": "string"
+            },
+            "full_name": {
+              "type": "string"
+            },
+            "program_study": {
+              "type": "string"
+            },
+            "academic_year": {
+              "type": "string"
+            }
+          }
+        },
+        "achievement_type": {
+          "$ref": "#/definitions/AchievementType"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "details": {
+          "$ref": "#/definitions/AchievementDetails"
+        },
+        "attachments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Attachment"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "points": {
+          "type": "number"
+        },
+        "status": {
+          "$ref": "#/definitions/AchievementStatus"
+        },
+        "reference": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "status": {
+              "$ref": "#/definitions/AchievementStatus"
+            },
+            "submitted_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "verified_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "verified_by": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "rejection_note": {
+              "type": "string"
+            }
+          }
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "AchievementListResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AchievementResponse"
+          }
+        },
+        "page": {
+          "type": "integer"
+        },
+        "limit": {
+          "type": "integer"
+        },
+        "total": {
+          "type": "integer"
+        },
+        "total_pages": {
+          "type": "integer"
+        }
+      }
+    },
+    "AchievementHistoryResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "old_status": {
+          "$ref": "#/definitions/AchievementStatus"
+        },
+        "new_status": {
+          "$ref": "#/definitions/AchievementStatus"
+        },
+        "changed_by": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "changed_by_user": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "username": {
+              "type": "string"
+            },
+            "full_name": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string"
+            }
+          }
+        },
+        "notes": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "StudentResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "student_id": {
+          "type": "string"
+        },
+        "program_study": {
+          "type": "string"
+        },
+        "academic_year": {
+          "type": "string"
+        },
+        "advisor_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "advisor": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "lecturer_id": {
+              "type": "string"
+            },
+            "department": {
+              "type": "string"
+            },
+            "user": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "username": {
+                  "type": "string"
+                },
+                "email": {
+                  "type": "string"
+                },
+                "full_name": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "user": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "username": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string"
+            },
+            "full_name": {
+              "type": "string"
+            },
+            "role_id": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "LecturerResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "lecturer_id": {
+          "type": "string"
+        },
+        "department": {
+          "type": "string"
+        },
+        "user": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "username": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string"
+            },
+            "full_name": {
+              "type": "string"
+            },
+            "role_id": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "PeriodStatResponse": {
+      "type": "object",
+      "properties": {
+        "period": {
+          "type": "string",
+          "example": "2025-01"
+        },
+        "count": {
+          "type": "integer"
+        }
+      }
+    },
+    "TopStudentStatResponse": {
+      "type": "object",
+      "properties": {
+        "student_id": {
+          "type": "string"
+        },
+        "student_name": {
+          "type": "string"
+        },
+        "total_points": {
+          "type": "number"
+        },
+        "total_achievements": {
+          "type": "integer"
+        }
+      }
+    },
+    "StatisticsResponse": {
+      "type": "object",
+      "properties": {
+        "total_by_type": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "example": {
+            "academic": 10,
+            "competition": 5,
+            "organization": 3
+          }
+        },
+        "total_by_period": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PeriodStatResponse"
+          }
+        },
+        "top_students": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TopStudentStatResponse"
+          }
+        },
+        "competition_level_distribution": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "example": {
+            "international": 2,
+            "national": 3,
+            "regional": 0,
+            "local": 0
+          }
+        }
+      }
+    },
+    "StudentStatisticsResponse": {
+      "type": "object",
+      "properties": {
+        "student_id": {
+          "type": "string"
+        },
+        "student_name": {
+          "type": "string"
+        },
+        "total_by_type": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "total_by_period": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PeriodStatResponse"
+          }
+        },
+        "competition_level_distribution": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "total_points": {
+          "type": "number"
+        },
+        "total_achievements": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}
+

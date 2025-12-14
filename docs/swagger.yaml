@@ -1,0 +1,1755 @@
+openapi: 3.0.0
+info:
+  title: Sistem Pelaporan Prestasi Mahasiswa API
+  version: 1.0.0
+  description: |
+    REST API untuk sistem pelaporan prestasi mahasiswa dengan dukungan:
+    - Role-Based Access Control (RBAC)
+    - JWT Authentication
+    - Achievement management dengan field dinamis
+    - Verifikasi prestasi oleh dosen wali
+    - Reporting dan analytics
+  contact:
+    name: API Support
+    email: support@example.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://api.example.com
+    description: Production server
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Authentication
+    description: Authentication and authorization endpoints
+  - name: Users
+    description: User management endpoints (Admin only)
+  - name: Achievements
+    description: Achievement management endpoints
+  - name: Students
+    description: Student management endpoints
+  - name: Lecturers
+    description: Lecturer management endpoints
+  - name: Reports
+    description: Reporting and analytics endpoints
+paths:
+  /:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Check if API is running
+      operationId: healthCheck
+      responses:
+        '200':
+          description: API is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: API Sistem Pelaporan Prestasi Mahasiswa
+                  status:
+                    type: string
+                    example: running
+  /api/v1/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      description: Authenticate user dengan username dan password, mendapatkan JWT token
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login berhasil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Username atau password salah
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh token
+      description: Refresh JWT token menggunakan refresh token
+      operationId: refreshToken
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Token berhasil di-refresh
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Token tidak valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user info
+      description: Mendapatkan informasi user dari JWT token
+      operationId: getMe
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User info berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        type: object
+                        properties:
+                          user_id:
+                            type: string
+                            format: uuid
+                          username:
+                            type: string
+                          role:
+                            type: string
+                          permissions:
+                            type: array
+                            items:
+                              type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/auth/profile:
+    get:
+      tags:
+        - Authentication
+      summary: Get user profile
+      description: Mendapatkan profile lengkap user yang sedang login
+      operationId: getProfile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile berhasil diambil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout user
+      description: Logout user (saat ini hanya return success, token masih valid sampai expired)
+      operationId: logout
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout berhasil
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        type: object
+                        properties:
+                          user_id:
+                            type: string
+                            format: uuid
+                          username:
+                            type: string
+  /api/v1/users:
+    get:
+      tags:
+        - Users
+      summary: Get all users
+      description: Mendapatkan daftar semua users (Admin only)
+      operationId: getAllUsers
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Daftar users berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserResponse'
+                  total:
+                    type: integer
+        '403':
+          description: Forbidden - tidak memiliki permission
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Users
+      summary: Create user
+      description: Membuat user baru dengan role dan profile (Admin only)
+      operationId: createUser
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User berhasil dibuat
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: User berhasil dibuat
+                  data:
+                    $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/users/{id}:
+    get:
+      tags:
+        - Users
+      summary: Get user by ID
+      description: Mendapatkan detail user berdasarkan ID (Admin only)
+      operationId: getUserByID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User ID
+      responses:
+        '200':
+          description: User berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  data:
+                    $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: User tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Users
+      summary: Update user
+      description: Update informasi user (Admin only)
+      operationId: updateUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User berhasil diupdate
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: User berhasil diupdate
+                  data:
+                    $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: User tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Users
+      summary: Delete user
+      description: Menghapus user (Admin only)
+      operationId: deleteUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User ID
+      responses:
+        '200':
+          description: User berhasil dihapus
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: User berhasil dihapus
+        '404':
+          description: User tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/users/{id}/role:
+    put:
+      tags:
+        - Users
+      summary: Update user role
+      description: Update role user (Admin only)
+      operationId: updateUserRole
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - role_id
+              properties:
+                role_id:
+                  type: string
+                  format: uuid
+                  description: Role ID
+      responses:
+        '200':
+          description: Role berhasil diupdate
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Role user berhasil diupdate
+                  data:
+                    $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: User atau role tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/achievements:
+    get:
+      tags:
+        - Achievements
+      summary: List achievements
+      description: |
+        Mendapatkan daftar achievements. Filter berdasarkan role:
+        - Mahasiswa: hanya achievement sendiri
+        - Dosen Wali: achievement mahasiswa bimbingannya
+        - Admin: semua achievements
+      operationId: listAchievements
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Page number
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+          description: Items per page
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, submitted, verified, rejected]
+          description: Filter by status
+      responses:
+        '200':
+          description: Daftar achievements berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  data:
+                    $ref: '#/components/schemas/AchievementListResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Achievements
+      summary: Create achievement
+      description: Membuat achievement baru (Mahasiswa only)
+      operationId: createAchievement
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAchievementRequest'
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                achievement_type:
+                  type: string
+                  enum: [academic, competition, organization, publication, certification, other]
+                title:
+                  type: string
+                description:
+                  type: string
+                details:
+                  type: string
+                  description: JSON string
+                tags:
+                  type: string
+                  description: JSON array atau comma-separated
+                points:
+                  type: number
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '201':
+          description: Achievement berhasil dibuat
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Achievement berhasil dibuat
+                  data:
+                    $ref: '#/components/schemas/AchievementResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/achievements/{id}:
+    get:
+      tags:
+        - Achievements
+      summary: Get achievement by ID
+      description: Mendapatkan detail achievement berdasarkan ID
+      operationId: getAchievementByID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Achievement ID (MongoDB ObjectID)
+      responses:
+        '200':
+          description: Achievement berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  data:
+                    $ref: '#/components/schemas/AchievementResponse'
+        '404':
+          description: Achievement tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Achievements
+      summary: Update achievement
+      description: Update achievement (Mahasiswa only, hanya status draft)
+      operationId: updateAchievement
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Achievement ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAchievementRequest'
+      responses:
+        '200':
+          description: Achievement berhasil diupdate
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Achievement berhasil diupdate
+                  data:
+                    $ref: '#/components/schemas/AchievementResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Achievements
+      summary: Delete achievement
+      description: Menghapus achievement (Mahasiswa only, hanya status draft)
+      operationId: deleteAchievement
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Achievement ID
+      responses:
+        '200':
+          description: Achievement berhasil dihapus
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Achievement berhasil dihapus
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/achievements/{id}/submit:
+    post:
+      tags:
+        - Achievements
+      summary: Submit achievement for verification
+      description: Submit achievement untuk verifikasi (Mahasiswa only, status harus draft)
+      operationId: submitAchievement
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Achievement ID
+      responses:
+        '200':
+          description: Achievement berhasil disubmit
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Achievement berhasil disubmit untuk verifikasi
+                  data:
+                    $ref: '#/components/schemas/AchievementResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/achievements/{id}/verify:
+    post:
+      tags:
+        - Achievements
+      summary: Verify achievement
+      description: Verifikasi achievement (Dosen Wali only, status harus submitted)
+      operationId: verifyAchievement
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Achievement ID
+      responses:
+        '200':
+          description: Achievement berhasil diverifikasi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Achievement berhasil diverifikasi
+                  data:
+                    $ref: '#/components/schemas/AchievementResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/achievements/{id}/reject:
+    post:
+      tags:
+        - Achievements
+      summary: Reject achievement
+      description: Menolak achievement dengan catatan (Dosen Wali only, status harus submitted)
+      operationId: rejectAchievement
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Achievement ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - rejection_note
+              properties:
+                rejection_note:
+                  type: string
+                  description: Alasan penolakan
+      responses:
+        '200':
+          description: Achievement ditolak
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Achievement ditolak
+                  data:
+                    $ref: '#/components/schemas/AchievementResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/achievements/{id}/history:
+    get:
+      tags:
+        - Achievements
+      summary: Get achievement history
+      description: Mendapatkan history perubahan status achievement
+      operationId: getAchievementHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Achievement ID
+      responses:
+        '200':
+          description: History berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AchievementHistoryResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/achievements/{id}/attachments:
+    post:
+      tags:
+        - Achievements
+      summary: Upload attachment
+      description: Upload file attachment untuk achievement (Mahasiswa only, status harus draft)
+      operationId: uploadAttachment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Achievement ID
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: File attachment (max 10MB, PDF, JPG, PNG, DOC, DOCX)
+      responses:
+        '200':
+          description: File berhasil diupload
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: File berhasil diupload
+                  data:
+                    type: object
+                    properties:
+                      file_path:
+                        type: string
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/students:
+    get:
+      tags:
+        - Students
+      summary: Get all students
+      description: Mendapatkan daftar semua students
+      operationId: getAllStudents
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Daftar students berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StudentResponse'
+                  total:
+                    type: integer
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/students/{id}:
+    get:
+      tags:
+        - Students
+      summary: Get student by ID
+      description: Mendapatkan detail student berdasarkan ID
+      operationId: getStudentByID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Student ID
+      responses:
+        '200':
+          description: Student berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  data:
+                    $ref: '#/components/schemas/StudentResponse'
+        '404':
+          description: Student tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/students/{id}/achievements:
+    get:
+      tags:
+        - Students
+      summary: Get student achievements
+      description: Mendapatkan daftar achievements milik student
+      operationId: getStudentAchievements
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Student ID
+      responses:
+        '200':
+          description: Daftar achievements berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AchievementResponse'
+                  total:
+                    type: integer
+        '404':
+          description: Student tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/students/{id}/advisor:
+    put:
+      tags:
+        - Students
+      summary: Update student advisor
+      description: Update dosen wali untuk student (Admin only)
+      operationId: updateStudentAdvisor
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Student ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                advisor_id:
+                  type: string
+                  format: uuid
+                  description: Lecturer ID (nullable)
+      responses:
+        '200':
+          description: Dosen wali berhasil diupdate
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Dosen wali berhasil diupdate
+                  data:
+                    $ref: '#/components/schemas/StudentResponse'
+        '404':
+          description: Student atau lecturer tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/lecturers:
+    get:
+      tags:
+        - Lecturers
+      summary: Get all lecturers
+      description: Mendapatkan daftar semua lecturers
+      operationId: getAllLecturers
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Daftar lecturers berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LecturerResponse'
+                  total:
+                    type: integer
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/lecturers/{id}/advisees:
+    get:
+      tags:
+        - Lecturers
+      summary: Get lecturer advisees
+      description: Mendapatkan daftar mahasiswa bimbingan dari lecturer
+      operationId: getLecturerAdvisees
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Lecturer ID
+      responses:
+        '200':
+          description: Daftar advisees berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StudentResponse'
+                  total:
+                    type: integer
+        '404':
+          description: Lecturer tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/reports/statistics:
+    get:
+      tags:
+        - Reports
+      summary: Get achievement statistics
+      description: |
+        Mendapatkan statistik prestasi. Filter berdasarkan role:
+        - Mahasiswa: statistik sendiri
+        - Dosen Wali: statistik mahasiswa bimbingannya
+        - Admin: statistik semua
+      operationId: getStatistics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Statistik berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  data:
+                    $ref: '#/components/schemas/StatisticsResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/reports/student/{id}:
+    get:
+      tags:
+        - Reports
+      summary: Get student statistics
+      description: Mendapatkan statistik prestasi untuk student tertentu
+      operationId: getStudentStatistics
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Student ID
+      responses:
+        '200':
+          description: Statistik berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    example: false
+                  data:
+                    $ref: '#/components/schemas/StudentStatisticsResponse'
+        '403':
+          description: Forbidden - tidak memiliki akses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Student tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token dari login endpoint
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Pesan error dalam bahasa Indonesia
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          example: mahasiswa123
+        password:
+          type: string
+          format: password
+          example: SecurePass123!
+    LoginResponse:
+      type: object
+      properties:
+        error:
+          type: boolean
+          example: false
+        data:
+          type: object
+          properties:
+            token:
+              type: string
+              example: eyJhbGciOiJIUzI1NiIs...
+            refreshToken:
+              type: string
+              example: eyJhbGciOiJIUzI1NiIs...
+            user:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                username:
+                  type: string
+                fullName:
+                  type: string
+                role:
+                  type: string
+                permissions:
+                  type: array
+                  items:
+                    type: string
+    ProfileResponse:
+      type: object
+      properties:
+        error:
+          type: boolean
+          example: false
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            username:
+              type: string
+            fullName:
+              type: string
+            role:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                name:
+                  type: string
+                description:
+                  type: string
+            permissions:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  resource:
+                    type: string
+                  action:
+                    type: string
+                  description:
+                    type: string
+            isActive:
+              type: boolean
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+        full_name:
+          type: string
+        role_id:
+          type: string
+          format: uuid
+          nullable: true
+        role:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            description:
+              type: string
+        permissions:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              name:
+                type: string
+              resource:
+                type: string
+              action:
+                type: string
+              description:
+                type: string
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    CreateUserRequest:
+      type: object
+      required:
+        - username
+        - email
+        - password
+        - full_name
+        - role_id
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        full_name:
+          type: string
+        role_id:
+          type: string
+          format: uuid
+        is_active:
+          type: boolean
+        lecturer_id:
+          type: string
+        department:
+          type: string
+        student_id:
+          type: string
+        program_study:
+          type: string
+        academic_year:
+          type: string
+        advisor_id:
+          type: string
+          format: uuid
+          nullable: true
+    UpdateUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+        role_id:
+          type: string
+          format: uuid
+        is_active:
+          type: boolean
+    CreateAchievementRequest:
+      type: object
+      required:
+        - achievement_type
+        - title
+        - description
+      properties:
+        achievement_type:
+          type: string
+          enum:
+            - academic
+            - competition
+            - organization
+            - publication
+            - certification
+            - other
+        title:
+          type: string
+        description:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+        tags:
+          type: array
+          items:
+            type: string
+        points:
+          type: number
+          default: 0
+    UpdateAchievementRequest:
+      type: object
+      properties:
+        achievement_type:
+          type: string
+          enum:
+            - academic
+            - competition
+            - organization
+            - publication
+            - certification
+            - other
+        title:
+          type: string
+        description:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+        tags:
+          type: array
+          items:
+            type: string
+        points:
+          type: number
+    AchievementResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        student_id:
+          type: string
+        student:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+            student_id:
+              type: string
+            full_name:
+              type: string
+            program_study:
+              type: string
+            academic_year:
+              type: string
+        achievement_type:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+        attachments:
+          type: array
+          items:
+            type: object
+            properties:
+              file_name:
+                type: string
+              file_url:
+                type: string
+              file_type:
+                type: string
+              uploaded_at:
+                type: string
+                format: date-time
+        tags:
+          type: array
+          items:
+            type: string
+        points:
+          type: number
+        status:
+          type: string
+          enum:
+            - draft
+            - submitted
+            - verified
+            - rejected
+        reference:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            status:
+              type: string
+            submitted_at:
+              type: string
+              format: date-time
+              nullable: true
+            verified_at:
+              type: string
+              format: date-time
+              nullable: true
+            verified_by:
+              type: string
+              format: uuid
+              nullable: true
+            rejection_note:
+              type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    AchievementListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+    AchievementHistoryResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        old_status:
+          type: string
+          nullable: true
+        new_status:
+          type: string
+        changed_by:
+          type: string
+          format: uuid
+        changed_by_user:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            username:
+              type: string
+            full_name:
+              type: string
+            email:
+              type: string
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    StudentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        student_id:
+          type: string
+        program_study:
+          type: string
+        academic_year:
+          type: string
+        advisor_id:
+          type: string
+          format: uuid
+          nullable: true
+        advisor:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            lecturer_id:
+              type: string
+            department:
+              type: string
+            user:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                username:
+                  type: string
+                email:
+                  type: string
+                full_name:
+                  type: string
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            username:
+              type: string
+            email:
+              type: string
+            full_name:
+              type: string
+            role_id:
+              type: string
+              format: uuid
+              nullable: true
+        created_at:
+          type: string
+          format: date-time
+    LecturerResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        lecturer_id:
+          type: string
+        department:
+          type: string
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            username:
+              type: string
+            email:
+              type: string
+            full_name:
+              type: string
+            role_id:
+              type: string
+              format: uuid
+              nullable: true
+        created_at:
+          type: string
+          format: date-time
+    StatisticsResponse:
+      type: object
+      properties:
+        total_by_type:
+          type: object
+          additionalProperties:
+            type: integer
+        total_by_period:
+          type: array
+          items:
+            type: object
+            properties:
+              period:
+                type: string
+              count:
+                type: integer
+        top_students:
+          type: array
+          items:
+            type: object
+            properties:
+              student_id:
+                type: string
+              student_name:
+                type: string
+              total_points:
+                type: number
+              total_achievements:
+                type: integer
+        competition_level_distribution:
+          type: object
+          additionalProperties:
+            type: integer
+    StudentStatisticsResponse:
+      type: object
+      properties:
+        student_id:
+          type: string
+        student_name:
+          type: string
+        total_by_type:
+          type: object
+          additionalProperties:
+            type: integer
+        total_by_period:
+          type: array
+          items:
+            type: object
+            properties:
+              period:
+                type: string
+              count:
+                type: integer
+        competition_level_distribution:
+          type: object
+          additionalProperties:
+            type: integer
+        total_points:
+          type: number
+        total_achievements:
+          type: integer

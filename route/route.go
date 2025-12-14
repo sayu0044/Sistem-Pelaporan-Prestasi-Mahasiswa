@@ -35,6 +35,8 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB, mongoDB *mongo.Database, jwtSec
 		})
 	})
 
+	RegisterSwaggerRoutes(app)
+
 	authPublic := app.Group("/api/v1/auth")
 	{
 		authPublic.Post("/login", func(c *fiber.Ctx) error {
